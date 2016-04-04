@@ -1,0 +1,166 @@
+#################################################
+#  PHP 5.6 Twig
+#  (c) 2016 Inkton
+#################################################
+
+NEST_CUSHION_TYPE=APP
+NEST_LANGUAGE=PHP
+NEST_LANGUAGE_VERSION=5.6.19-r0
+NEST_LANGUAGE_PACKAGES='[
+	"uwsgi-php", 
+	"php-embed", 
+	"php-cli", 
+	"php-pear",
+	"php-opcache",
+	"php-openssl", 
+	"php-phar",
+	"php-json",
+	"php-mysql",
+	"php-pgsql"
+	]'
+
+#  php handlers
+#  -----------------------------
+
+php_before_install() {
+	yell "-> php_before_install"; 
+	do_things before install php
+}
+
+php_after_install() { 
+	yell "-> after_php_install";
+	run_cmd "/sbin/apk --progress --update add" "$NEST_LANGUAGE_PACKAGES"
+
+try echo '
+;  *****************************
+;              PHP
+;  *****************************
+fastcgi-modifier1 = 14
+fastcgi-modifier2 = 2
+
+procname-prefix-spaced = [nest-php]
+php-sapi-name = apache                 
+plugins = php
+
+; load a php engine as soon as possible
+early-php = true
+
+; chdir to it                                                                                                                  
+chdir = %(project_dir)                                                                                                                        
+; check for static files in it                                                                                                                
+check-static = %(project_dir)                                                                                                                 
+; ...but skip .php and .inc extensions                                                                                                        
+static-skip-ext = .php                                                                                                                        
+static-skip-ext = .inc                                                                                                                        
+; search for index.html when a dir is requested                                                                                               
+static-index = index.html                                                                                                                     
+                                                                                                                                 
+; jail our php environment to project_dir                                                                                                     
+php-docroot = %(project_dir)                                                                                                                  
+; ... and to the .php and .inc extensions                                                                                                     
+php-allowed-ext = .php                                                                                                                        
+php-allowed-ext = .inc                                                                                                                        
+; and search for index.php and index.inc if required                                                                                          
+php-index = index.php                                                                                                                         
+php-index = index.inc                                                                                                                         
+
+; set php timezone                                                                                                                   
+php-set = date.timezone="$NEST_PHP_TIMEZONE"
+; default is "?"
+php-set = memory_limit="$NEST_MEMORY_LIMIT"
+; default is "?"
+php-set = max_execution_time="$NEST_PHP_MAX_EXECUTION_TIME"
+
+; default is "On"
+php-set = file_uploads=On
+; temp dir                                                                                                                            
+php-set = upload_tmp_dir="$NEST_FOLDER_TRANSFERS"
+; default is "20"
+php-set = max-file-upload="$NEST_PHP_MAX_EXECUTION_TIME"
+; default is "2M"
+php-set = upload_max_filesize="$NEST_PHP_UPLOAD_MAX_FILESIZE"
+; default is "2M"
+php-set = post_max_size="$NEST_PHP_POST_MAX_SIZE"                                                                                                             
+' >> "$NEST_APP_SETTINGS_PATH"
+
+	yell "->install composer"; 
+	/usr/bin/php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php
+	/usr/bin/php -r "if (hash('SHA384', file_get_contents('composer-setup.php')) === '41e71d86b40f28e771d4bb662b997f79625196afcca95a5abf44391188c695c6c1456e16154c75a211d238cc3bc5cb47') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+	/usr/bin/php composer-setup.php --install-dir=/bin --filename=composer
+	/usr/bin/php -r "unlink('composer-setup.php');"
+
+	do_things after install php
+}
+
+php_before_update() {
+	yell "-> before_php_update"; 
+	do_things before update php
+}
+
+php_after_update() { 
+	yell "-> after_php_update"; 
+	run_cmd "/sbin/apk --progress update" "$NEST_LANGUAGE_PACKAGES"
+	do_things after update php
+}
+
+php_before_upgrade() {
+	yell "-> before_php_upgrade";   
+	do_things before upgrade php
+} 
+
+php_after_upgrade() { 
+	yell "-> after_php_upgrade"; 
+	run_cmd "/sbin/apk --progress --update upgrade" "$NEST_LANGUAGE_PACKAGES"
+	do_things after upgrade php
+}
+
+php_before_remove() {
+	yell "-> before_php_remove"; 
+	do_things before remove php
+}
+
+php_after_remove() { 
+	yell "-> after_php_remove"; 
+	run_cmd "/sbin/apk --progress del" "$NEST_LANGUAGE_PACKAGES"
+
+	composer global remove phpunit/phpunit
+	rm -rf /bin/composer
+
+	do_things after remove php
+}
+
+php_before_info() {
+	yell "-> before_php_info"; 
+	do_things before info php
+}
+
+php_after_info() { 
+	yell "-> after_php_info"; 
+	run_cmd "/sbin/apk version" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/sbin/apk audit" "$NEST_LANGUAGE_PACKAGES"
+	do_things after info php
+}
+
+php_before_up() {
+	do_things before up php
+}                                            
+
+php_after_up() {
+	do_things after up php
+}
+                                           
+php_before_down() {
+	do_things before down php
+}
+
+php_after_down() {
+	do_things after down php
+}
+
+php_before_daily() {
+	do_things before daily php
+}
+
+php_after_daily() {
+	do_things after daily php
+}

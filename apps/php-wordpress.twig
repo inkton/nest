@@ -1,0 +1,80 @@
+#################################################
+#  Wordpress Twig
+#  (c) 2016 Inkton
+#################################################
+
+wordpress_before_install() {
+	yell "-> wordpress_before_install"; 
+	do_things before install wordpress
+}
+
+wordpress_after_install() { 
+	yell "-> after_wordpress_install";
+	do_things after install wordpress
+}
+
+wordpress_before_update() {
+	yell "-> before_wordpress_update"; 
+	do_things before update wordpress
+}
+
+wordpress_after_update() { 
+	yell "-> after_wordpress_update"; 
+	run_cmd "/sbin/apk --progress update" "$NEST_LANGUAGE_PACKAGES"
+	do_things after update wordpress
+}
+
+wordpress_before_upgrade() {
+	yell "-> before_wordpress_upgrade";   
+	do_things before upgrade wordpress
+} 
+
+wordpress_after_upgrade() { 
+	yell "-> after_wordpress_upgrade"; 
+	run_cmd "/sbin/apk --progress --update upgrade" "$NEST_LANGUAGE_PACKAGES"
+	do_things after upgrade wordpress
+}
+
+wordpress_before_remove() {
+	yell "-> before_wordpress_remove"; 
+	do_things before remove wordpress
+}
+
+wordpress_after_remove() { 
+	yell "-> after_wordpress_remove";
+	do_things after remove wordpress
+}
+
+wordpress_before_info() {
+	yell "-> before_wordpress_info"; 
+	do_things before info wordpress
+}
+
+wordpress_after_info() { 
+	yell "-> after_wordpress_info"; 
+	do_things after info wordpress
+}
+
+wordpress_before_up() {
+	do_things before up wordpress
+}
+
+wordpress_after_up() {
+	do_things after up wordpress
+}
+
+wordpress_before_down() {
+	do_things before down wordpress
+} 
+
+wordpress_after_down() {              
+	do_things after down wordpress
+}
+
+wordpress_before_daily() {
+	do_things before daily wordpress
+}
+
+wordpress_after_daily() {
+	do_things after daily wordpress
+}

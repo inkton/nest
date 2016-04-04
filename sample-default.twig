@@ -1,0 +1,34 @@
+#################################################
+#  Default Twig
+#  (c) 2016 Inkton
+#################################################
+
+#!/bin/sh
+#set -xv
+
+this_dir=${0%/*}
+
+. "$this_dir"/frameworks/base.twig
+. "$this_dir"/frameworks/php-5.6.twig
+. "$this_dir"/apps/php-wordpress.twig
+
+set_os_env() {
+	NEST_SITE_HOME=<NEST_SITE_HOME>
+	NEST_SITE_EMAIL=<NEST_SITE_EMAIL>
+	NEST_SITE_ORG=<NEST_SITE_ORG>
+	NEST_DB_PASSWORD=<NEST_DB_PASSWORD>
+}
+
+default_before_install() {
+	set_os_env
+}
+
+default_before_up() {   
+	set_os_env
+}
+
+link_twigs base php
+link_twigs php wordpress
+link_twigs wordpress default
+
+$@ 

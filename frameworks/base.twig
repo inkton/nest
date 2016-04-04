@@ -1,0 +1,436 @@
+#################################################
+#  Base Twig
+#  (c) 2016 Inkton
+#
+#	All content that appear under NEST_HOME
+#	are shared between the nest cushions.
+# 	Use Twigs to change the application
+# 	that operate on the content.
+#
+#
+
+NEST_CUSHION_TYPE=base
+NEST_BASE_VERSION=1.0
+NEST_BASE_PACKAGES='["sudo", "uwsgi", "openssl", "ca-certificates"]'
+NEST_OPERATION=$1
+
+# set in derived language twig
+NEST_LANGUAGE=''
+NEST_LANGUAGE_VERSION=''
+
+null_callback() { 
+	: 
+}
+
+yell() { echo `date --utc +%Y%m%d_%H%M%SZ` "$0: $* "; }
+die() { yell `date --utc +%Y%m%d_%H%M%SZ` "$0: $* " "$*"; exit 111; }
+try() { "$@" || die "cannot $*" ; }
+fly() { "$@"; }
+asadmin() { sudo su - "$NEST_APP_ADMIN" -c "${*:1}"; } 
+
+function_exists()  { 
+	type $1 | grep -q 'shell function'; 
+}
+
+link_twigs() {
+	local to_assign_b=twig_"$1"_before_"$NEST_OPERATION"
+	local to_func_b="$2"_before_"$NEST_OPERATION"
+
+	if function_exists "$to_func_b"; then
+		yell hooking $to_func_b ... 
+		eval "$to_assign_b='$to_func_b'"
+	else
+		eval "$to_assign_b=null_callback"
+	fi
+
+	local to_assign_a=twig_"$1"_after_"$NEST_OPERATION"
+	local to_func_a="$2"_after_"$NEST_OPERATION"
+
+	if function_exists "$to_func_a"; then
+		yell hooking $to_func_a ... 
+		eval "$to_assign_a='$to_func_a'"
+	else
+		eval "$to_assign_a=null_callback"
+	fi
+}
+
+#link_twigs() {
+	#link_func $1 $2 install
+	#link_func $1 $2 update
+	#link_func $1 $2 upgrade
+	#link_func $1 $2 remove
+	#link_func $1 $2 info
+	#link_func $1 $2 up
+	#link_func $1 $2 down
+	#link_func $1 $2 daily
+#}
+
+# do_things before install base
+do_things() {
+	local when=$1; local op=$2; local from=$3
+	local call=twig_"$from"_"$when"_"$op"
+	eval "\${$call}"
+}
+
+run_cmd() {                               
+	echo $2 | jq -r '.[]' | while read i; do                         
+			try $1 $i       
+			done                                          
+}  
+
+set_os_env() {
+	NEST_PROCESSORS=2
+	NEST_START_PROCESSORS=1
+	NEST_RSS_LIMIT_SOFT=$(( 128 * 1024 * 1024 ))
+	NEST_MEMORY_LIMIT=128
+
+	NEST_SITE_HOME=example.com
+	NEST_SITE_EMAIL=contact@example.com
+	NEST_SITE_ORG=example-org
+
+	NEST_LOCATION_FOREST=tongass
+	NEST_LOCATION_TREE=pyrus
+
+	NEST_DB_HOST_IP=0.0.0.0
+	NEST_DB_VENDOR=mysql
+	NEST_DB_NAME=example_db
+	NEST_DB_USER=db_user
+	NEST_DB_PASSWORD=db_pass
+}
+
+secure_access() {
+	yell "securing access to the public area"
+
+	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+	try /bin/chown -R $NEST_APP_USER_UID:$NEST_APP_GROUP $NEST_FOLDER_PUBLIC
+
+	try find $NEST_FOLDER_PUBLIC -type d -exec /bin/chmod 775 {} \;  # Change directory permissions rwxr-xr-x
+	try find $NEST_FOLDER_PUBLIC -type f -exec /bin/chmod 644 {} \;  # Change file permissions rw-r--r--
+}
+ 
+set_registry() {
+	yell "creating a new app registry"
+try cat >"$NEST_REGISTRY_PATH" <<EOL
+{
+  "site": {
+    "home": "$NEST_SITE_HOME",
+    "email": "$NEST_SITE_EMAIL",
+    "organization": "$NEST_SITE_ORG"
+  },
+  "location": {
+    "id": "$NEST_ID",
+    "name": "$NEST_NAME",
+    "tree": "$NEST_LOCATION_TREE",
+    "forest": "$NEST_LOCATION_FOREST"
+  },
+  "database": {
+    "vendor": "$NEST_DB_VENDOR",
+    "name": "$NEST_DB_NAME",
+    "user": "$NEST_DB_USER",
+    "password": "$NEST_DB_PASSWORD",
+    "host_ip": "$NEST_DB_HOST_IP",
+    "charset": "utf8",
+    "collate": "utf8_general_ci"
+  },
+  "twig":  {
+    "language" : "$NEST_LANGUAGE",
+    "version" : "$NEST_LANGUAGE_VERSION"
+  }
+}
+EOL
+}
+
+create_app_admin() {
+	ret=false
+	getent passwd $NEST_NAME >/dev/null 2>&1 && ret=true
+
+	if $ret; then
+		yell "user $NEST_NAME already exist"
+	else
+		try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID -G $NEST_APP_GROUP -h "/home/$NEST_APP_ADMIN" -s /opt/bin/twigsh $NEST_APP_ADMIN 
+		try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
+		try ssh-keyscan -t rsa $NEST_LOCATION_TREE.nest.yt | tee /root/.ssh/known_hosts /home/$NEST_APP_ADMIN/.ssh/known_hosts 
+		echo "Host nest \
+			HostName $NEST_LOCATION_TREE.nest.yt \
+			User $NEST_APP_ADMIN" | tee "/root/.ssh/config" "/home/$NEST_APP_ADMIN/.ssh/config"
+
+		try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
+		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
+		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+	fi
+}
+
+create_db_scripts() {
+	yell "creating default DB scripts"
+	try cat >"$NEST_FOLDER_DB_SCRIPTS/make_backup.sh" <<EOL
+#!/bin/sh
+
+DB_NAME=$(cat $NEST_REGISTRY_PATH | jq -r '.database.name')
+DB_USER=$(cat $NEST_REGISTRY_PATH | jq -r '.database.user')
+DB_PASSWORD=$(cat $NEST_REGISTRY_PATH | jq -r '.database.password')
+DB_HOST=$(cat $NEST_REGISTRY_PATH | jq -r '.database.host')
+
+mysqldump -u $DB_USER -p$DB_PASSWORD -h $DB_HOST $DB_NAME --quick | gzip > $NEST_FOLDER_PUBLIC/transfers/database-%Y%m%d_%H%M%SZ.gz
+EOL
+}
+
+create_app_settings() {
+	try cat >"$NEST_APP_SETTINGS_PATH" <<EOL
+;  *****************************
+;  Nest App Settings
+;  (c) 2016 Inkton
+;  *****************************
+[uwsgi]
+; load the required plugins, php is loaded as the default (0) modifier
+plugins-dir = /usr/lib/uwsgi/
+; bind the http router to port 80
+fastcgi-socket = :8888
+thunder-lock = true
+
+; metrics
+enable-metrics
+stats = :8181
+
+; leave the master running as root (to allows bind on port 80)
+master = true        
+master-as-root = true
+
+; reload whenever this config file changes
+; %p is the full path of the current config file
+touch-reload = %p
+                
+logto = $NEST_LOG_PATH                       
+;rotate logs when filesize is higher than 20 megs
+log-maxsize = 1048576
+show-config = true
+                 
+; drop privileges
+uid = "$NEST_APP_USER"
+gid = "$NEST_APP_GROUP"
+
+; our working dir            
+project_dir = "$NEST_FOLDER_PUBLIC"
+
+; disable uWSGI request logging                                                                                                               
+disable-logging = false                                                                                                                       
+; use a max of 17 processes                                                                                                                   
+processes = "$NEST_MAX_PROCESSORS"                                                                                                                               
+; ...but start with only NEST_START_PROCESSORS and spawn the others on demand                                                                                     
+cheaper="$NEST_START_PROCESSORS"
+
+# soft limit will prevent cheaper from spawning new workers
+# if workers total rss memory is equal or higher
+# we use 128MB soft limit below (value 134217728 in bytes)
+cheaper-rss-limit-soft = "$NEST_RSS_LIMIT_SOFT"
+memory-report
+
+; set process names to something meaningful
+auto-procname = true
+mime-file = /etc/conf.d/uwsgi-nest/mime.types
+EOL
+
+}
+
+create_default_pages() {
+	yell "creating default html pages"
+try cat > "$NEST_FOLDER_PUBLIC/index.html" <<EOL
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Nest</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="nest.yt Platform as a Service (PaaS) micro-container platform">
+		<meta name="keywords"pass, sass, docker, platform, developers, build, deploy, scale, php, java, dot.net, python, ruby, nodejs">
+        <link href="https://fonts.googleapis.com/css?family=Lato:100" rel="stylesheet" type="text/css">
+        <style>
+            html, body {height: 100%;}
+            body { margin: 0; padding: 0; width: 100%; display: table; font-weight: 100; font-family: 'Lato';}
+            .container {text-align: center; display: table-cell; vertical-align: middle;}
+            .content {text-align: center; display: inline-block;}
+            .title { font-weight: 300; font-size: 66px;}
+            .sub-title { font-size: 30px;}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="content">
+                <div class="title">$nest_name.$business_domain</div>
+                <div class="sub-title ">working hard to amaze you</div>
+            </div>
+        </div>
+    </body>
+</html>
+EOL
+
+try cat > "$NEST_FOLDER_PUBLIC/404.html" <<EOL
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Nest</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Docker micro-container developer platform">
+			<meta name="keywords"docker, platform, developers, build, deploy, scale, php, java, dot.net, python, ruby, nodejs">
+        <link href="https://fonts.googleapis.com/css?family=Lato:100" rel="stylesheet" type="text/css">
+        <style>
+            html, body {height: 100%;}
+            body { margin: 0; padding: 0; width: 100%; display: table; font-weight: 100; font-family: 'Lato';}
+            .container {text-align: center; display: table-cell; vertical-align: middle;}
+            .content {text-align: center; display: inline-block;}
+            .title { font-weight: 300; font-size: 66px;}
+            .sub-title { font-size: 30px;}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="content">
+                <div class="title">Oops!</div>
+                <div class="sub-title ">That is not allowed.</div>
+            </div>
+        </div>
+    </body>
+</html>
+EOL
+
+cat > "$NEST_FOLDER_PUBLIC/50x.html" <<EOL
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Nest</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Docker micro-container developer platform">
+		<meta name="keywords"docker, platform, developers, build, deploy, scale, php, java, dot.net, python, ruby, nodejs">
+        <link href="https://fonts.googleapis.com/css?family=Lato:100" rel="stylesheet" type="text/css">
+        <style>
+            html, body {height: 100%;}
+            body { margin: 0; padding: 0; width: 100%; display: table; font-weight: 100; font-family: 'Lato';}
+            .container {text-align: center; display: table-cell; vertical-align: middle;}
+            .content {text-align: center; display: inline-block;}
+            .title { font-weight: 300; font-size: 66px;}
+            .sub-title { font-size: 30px;}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="content">
+                <div class="title">Oops!</div>
+                <div class="sub-title ">Something went wrong, the admin was notified. Please try again and see.</div>
+            </div>
+        </div>
+    </body>
+</html>
+EOL
+}
+
+op_begin() { 
+	yell "<-op_begin->"; 
+	source /etc/os-release
+}
+
+op_end() {
+	yell "<-op_end->"; 
+	secure_access
+}
+
+install() {
+	op_begin "installing ..."
+
+	create_app_admin
+	set_os_env
+	secure_access
+
+	do_things before install base
+	run_cmd "/sbin/apk --progress --update add" "$NEST_BASE_PACKAGES"
+
+	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+		yell "installing as master ..."
+		set_registry
+		create_db_scripts
+		create_app_settings
+		create_default_pages
+	fi
+
+	do_things after install base
+	op_end "- install ended - "
+}
+
+update() {
+	op_begin "updating ..."
+	do_things before update base
+	run_cmd "/sbin/apk --progress update" "$NEST_BASE_PACKAGES"
+	run_cmd "/sbin/apk cache -v sync"
+	do_things after update base
+	op_end "- updating ended - "
+}
+
+upgrade() {
+	op_begin "upgrading ..."
+	do_things before upgrade base
+	run_cmd "/sbin/apk --progress --update upgrade" "$NEST_BASE_PACKAGES"
+	run_cmd "/sbin/apk cache -v sync"
+	do_things after upgrade base
+	op_end "- upgrading ended - "
+}
+
+remove() {
+	op_begin "removing ..."
+	do_things before remove base
+
+	run_cmd "/sbin/apk --progress del" "$NEST_BASE_PACKAGES"
+
+	fly rm -f $NEST_REGISTRY_PATH
+	fly rm -f $NEST_APP_SETTINGS_PATH
+
+	fly rm -f $NEST_FOLDER_PUBLIC/index.html
+	fly rm -f $NEST_FOLDER_PUBLIC/404.html
+	fly rm -f $NEST_FOLDER_PUBLIC/50x.html
+
+	fly rm -rf $NEST_FOLDER_DB_SCRIPTS/*
+
+	do_things after remove base
+	op_end "- removing ended - "
+
+}
+ 
+info() {
+	op_begin "info ..."
+	do_things before info base
+
+	yell "*** begin package stats **** " >> log 2>&1
+	try /sbin/apk stats
+	yell "*** end package stats **** " >> log 2>&1
+
+	yell "*** begin package info **** " >> log 2>&1
+	fly /sbin/apk -vv info|sort
+
+	run_cmd "/sbin/apk version" "$NEST_BASE_PACKAGES"
+	run_cmd "/sbin/apk audit" "$NEST_BASE_PACKAGES"
+
+	yell "*** end package info **** " >> log 2>&1
+
+	yell "*** begin app settings **** " >> log 2>&1
+	cat /etc/conf.d/uwsgi-nest/settings.ini >> log 2>&1
+	yell "*** end app settings **** " >> log 2>&1
+
+	do_things after info base
+	op_end "- info ended - "
+}
+
+up() {
+	do_things before up base
+
+	set_os_env
+	/usr/sbin/uwsgi --ini /var/www/conf/uwsgi-settings.ini
+
+	do_things after up base
+}
+
+down() {                                                                                                             
+	do_things before down base
+	
+	do_things after down base                                                                                                  
+}
+
+daily() {
+	do_things before daily base                                                                                                 
+	do_things after daily base
+}
