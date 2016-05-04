@@ -2,25 +2,30 @@
 #  PHP 5.6 Twig
 #  (c) 2016 Inkton
 #################################################
+.
+php_init() {
+	yell "-> php init"; 
+	NEST_LANGUAGE=PHP
+	NEST_LANGUAGE_VERSION=5.6.19-r0
+	NEST_LANGUAGE_PACKAGES='[
+		"uwsgi-php", 
+		"php-embed", 
+		"php-cli", 
+		"php-pear",
+		"php-opcache",
+		"php-openssl", 
+		"php-phar",
+		"php-json",
+		"php-mysql",
+		"php-pgsql"
+		]'
 
-NEST_CUSHION_TYPE=APP
-NEST_LANGUAGE=PHP
-NEST_LANGUAGE_VERSION=5.6.19-r0
-NEST_LANGUAGE_PACKAGES='[
-	"uwsgi-php", 
-	"php-embed", 
-	"php-cli", 
-	"php-pear",
-	"php-opcache",
-	"php-openssl", 
-	"php-phar",
-	"php-json",
-	"php-mysql",
-	"php-pgsql"
-	]'
+	init_after php
+}
 
-#  php handlers
-#  -----------------------------
+php_shutdown() {
+	shutdown_before php
+}
 
 php_before_install() {
 	yell "-> php_before_install"; 
@@ -29,9 +34,15 @@ php_before_install() {
 
 php_after_install() { 
 	yell "-> after_php_install";
-	run_cmd "/sbin/apk --progress --update add" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/sbin/apk --update add" "$NEST_LANGUAGE_PACKAGES"
 
-try echo '
+	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+		yell "installing as master ..."
+
+		. $NEST_TWIG_UTILS_FOLDER/uwsgi.sh
+		uwsgi_new_install
+
+try echo "
 ;  *****************************
 ;              PHP
 ;  *****************************
@@ -39,16 +50,12 @@ fastcgi-modifier1 = 14
 fastcgi-modifier2 = 2
 
 procname-prefix-spaced = [nest-php]
-php-sapi-name = apache                 
+php-sapi-name = apache
 plugins = php
 
 ; load a php engine as soon as possible
 early-php = true
-
-; chdir to it                                                                                                                  
-chdir = %(project_dir)                                                                                                                        
-; check for static files in it                                                                                                                
-check-static = %(project_dir)                                                                                                                 
+                                                                                                     
 ; ...but skip .php and .inc extensions                                                                                                        
 static-skip-ext = .php                                                                                                                        
 static-skip-ext = .inc                                                                                                                        
@@ -65,29 +72,29 @@ php-index = index.php
 php-index = index.inc                                                                                                                         
 
 ; set php timezone                                                                                                                   
-php-set = date.timezone="$NEST_PHP_TIMEZONE"
-; default is "?"
-php-set = memory_limit="$NEST_MEMORY_LIMIT"
-; default is "?"
-php-set = max_execution_time="$NEST_PHP_MAX_EXECUTION_TIME"
+php-set = date.timezone=$NEST_PHP_TIMEZONE
+; default is ?
+php-set = memory_limit=$NEST_MEMORY_LIMIT
+; default is ?
+php-set = max_execution_time=$NEST_PHP_MAX_EXECUTION_TIME
 
-; default is "On"
+; default is On
 php-set = file_uploads=On
 ; temp dir                                                                                                                            
-php-set = upload_tmp_dir="$NEST_FOLDER_TRANSFERS"
-; default is "20"
-php-set = max-file-upload="$NEST_PHP_MAX_EXECUTION_TIME"
-; default is "2M"
-php-set = upload_max_filesize="$NEST_PHP_UPLOAD_MAX_FILESIZE"
-; default is "2M"
-php-set = post_max_size="$NEST_PHP_POST_MAX_SIZE"                                                                                                             
-' >> "$NEST_APP_SETTINGS_PATH"
+php-set = upload_tmp_dir=$NEST_FOLDER_TRANSFERS
+; default is 20
+php-set = max-file-upload=$NEST_PHP_FILE_UPLOAD
+; default is 2M
+php-set = upload_max_filesize=$NEST_PHP_UPLOAD_MAX_FILESIZE
+; default is 2M
+php-set = post_max_size=$NEST_PHP_POST_MAX_SIZE                                                                                     
+" >> "$NEST_APP_SETTINGS_PATH"
+	fi
 
 	yell "->install composer"; 
-	/usr/bin/php -r "readfile('https://getcomposer.org/installer');" > composer-setup.php
-	/usr/bin/php -r "if (hash('SHA384', file_get_contents('composer-setup.php')) === '41e71d86b40f28e771d4bb662b997f79625196afcca95a5abf44391188c695c6c1456e16154c75a211d238cc3bc5cb47') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-	/usr/bin/php composer-setup.php --install-dir=/bin --filename=composer
-	/usr/bin/php -r "unlink('composer-setup.php');"
+	/usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
+	/usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
+	/usr/bin/php -r "unlink('/tmp/composer-setup.php');"
 
 	do_things after install php
 }
@@ -99,7 +106,11 @@ php_before_update() {
 
 php_after_update() { 
 	yell "-> after_php_update"; 
-	run_cmd "/sbin/apk --progress update" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/sbin/apk update" "$NEST_LANGUAGE_PACKAGES"	
+	
+	/bin/composer self-update
+	/bin/composer update
+
 	do_things after update php
 }
 
@@ -110,7 +121,7 @@ php_before_upgrade() {
 
 php_after_upgrade() { 
 	yell "-> after_php_upgrade"; 
-	run_cmd "/sbin/apk --progress --update upgrade" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/sbin/apk --update upgrade" "$NEST_LANGUAGE_PACKAGES"
 	do_things after upgrade php
 }
 
@@ -121,7 +132,12 @@ php_before_remove() {
 
 php_after_remove() { 
 	yell "-> after_php_remove"; 
-	run_cmd "/sbin/apk --progress del" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
+
+	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+		. $NEST_TWIG_UTILS_FOLDER/uwsgi.sh
+		uwsgi_remove_install
+	fi
 
 	composer global remove phpunit/phpunit
 	rm -rf /bin/composer
@@ -147,6 +163,8 @@ php_before_up() {
 
 php_after_up() {
 	do_things after up php
+	. $NEST_TWIG_UTILS_FOLDER/uwsgi.sh
+	uwsgi_start
 }
                                            
 php_before_down() {

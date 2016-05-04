@@ -1,7 +1,18 @@
 #################################################
 #  Wordpress Twig
 #  (c) 2016 Inkton
+#  Rajitha Wijayaratne
 #################################################
+
+wordpress_init() {
+	yell "-> wordpress init"; 
+	NEST_CUSHION_TYPE=APP
+	init_after wordpress
+}
+
+wordpress_shutdown() {
+	shutdown_before wordpress
+}
 
 wordpress_before_install() {
 	yell "-> wordpress_before_install"; 

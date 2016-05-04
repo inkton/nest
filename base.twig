@@ -1,0 +1,377 @@
+#################################################
+#  Base Twig
+#  (c) 2016 Inkton
+#
+#	All content that appear under NEST_HOME
+#	are shared between the nest cushions.
+# 	Use Twigs to change the application
+# 	that operate on the content.
+#
+#  Rajitha Wijayaratne
+#################################################
+
+null_callback() { 
+	: 
+}
+
+yell() { 
+	echo `date --utc +%Y%m%d_%H%M%SZ` "$0: $* "; 
+}
+
+die() {
+	yell `date --utc +%Y%m%d_%H%M%SZ` "$0: $* " "$*"; exit 111; 
+}
+
+try() {
+	"$@" || die "cannot $*" ; 
+}
+
+fly() {
+ "$@"; 
+}
+
+asadmin() {
+	sudo su - "$NEST_APP_ADMIN" -c "${*:1}"; 
+} 
+
+function_exists()  { 
+	type $1 | grep -q 'shell function'; 
+}
+
+twig_links_begin() {
+	NEST_CUSHION_TYPE=base
+	NEST_BASE_VERSION=1.0
+	NEST_TWIG_RUN_TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
+	NEST_LANGUAGE=''
+	NEST_LANGUAGE_VERSION=''
+
+	NEST_TWIG_FOLDER=$(dirname $0)
+	NEST_TWIG_UTILS_FOLDER=$NEST_TWIG_FOLDER/utils
+	NEST_TWIG_FRAMEWORKS_FOLDER=$NEST_TWIG_FOLDER/frameworks
+	NEST_TWIG_APP_FOLDER=$NEST_TWIG_FOLDER/apps
+
+	if [ -z "$NEST_OPERATION" ]; then
+		# default operation is up
+		NEST_OPERATION=up
+	fi
+
+	if [ "$NEST_DB_VENDOR" = mysql ]; then
+		NEST_BASE_PACKAGES='["uwsgi", "uwsgi-router_uwsgi", "mariadb-client"]'
+	elif [ "$NEST_DB_VENDOR" = postgres ]; then
+		NEST_BASE_PACKAGES='["uwsgi", "uwsgi-router_uwsgi", "postgresql-client"]'
+	fi
+}
+
+link_twigs() {
+	yell linking twigs "$1 and $2 ..." 
+
+	local to_init=twig_init_"$1"
+	local to_init_func="$2"_init
+
+	if function_exists "$to_init_func"; then
+		eval "$to_init=$to_init_func"
+	else
+		eval "$to_init=null_callback"
+	fi
+
+	local to_shutdown=twig_shutdown_"$1"
+	local to_shutdown_func="$2"_shutdown
+
+	if function_exists "$to_init_func"; then
+		eval "$to_shutdown=$to_shutdown_func"
+	else
+		eval "$to_shutdown=null_callback"
+	fi
+	
+	local to_assign_b=twig_"$1"_before_"$NEST_OPERATION"
+	local to_func_b="$2"_before_"$NEST_OPERATION"
+	
+	if function_exists "$to_func_b"; then
+		eval "$to_assign_b='$to_func_b'"
+	else
+		eval "$to_assign_b=null_callback"
+	fi
+
+	local to_assign_a=twig_"$1"_after_"$NEST_OPERATION"
+	local to_func_a="$2"_after_"$NEST_OPERATION"
+
+	if function_exists "$to_func_a"; then
+		eval "$to_assign_a='$to_func_a'"
+	else
+		eval "$to_assign_a=null_callback"
+	fi
+}
+
+init_after() {
+	local from=$1
+	local call=twig_init_"$from"
+	eval "\${$call}"	
+}
+
+shutdown_before() {
+	local from=$1
+	local call=twig_shutdown_"$from"
+	eval "\${$call}"	
+}
+
+do_things() {
+	local when=$1; local op=$2; local from=$3
+	local call=twig_"$from"_"$when"_"$op"
+	eval "\${$call}"
+}
+
+base_init() {
+	yell "<- begin ->"; 
+	source /etc/os-release
+	init_after base
+}
+
+base_shutdown() {
+	yell "<- end ->"; 
+	shutdown_before base
+	secure_access
+}
+
+twig_links_end()  {
+	base_init
+	eval $NEST_OPERATION
+	base_shutdown
+}
+
+run_cmd() {                               
+	echo $2 | jq -r '.[]' | while read i; do                         
+			try $1 $i       
+			done                                          
+}  
+
+setup_log() {
+	if [ -f "$NEST_CUSHION_LOG_PATH" ]; then
+		> $NEST_CUSHION_SETTINGS_PATH
+	else
+		try /bin/touch $NEST_CUSHION_LOG_PATH
+		try /bin/chmod -R a+w $NEST_CUSHION_LOG_PATH
+	fi
+}
+
+create_cushion_settings() {
+
+	if [ -f "$NEST_CUSHION_SETTINGS_PATH" ]; then
+		try source $NEST_CUSHION_SETTINGS_PATH
+		
+		if [ $NEST_CUSHION_LANGUAGE != $NEST_LANGUAGE ]; then
+			yell "remove the existing install using the $NEST_LANGUAGE twig before installing another lanuage type!"
+			exit -1
+		fi
+
+	else
+try cat > $NEST_CUSHION_SETTINGS_PATH <<EOL
+NEST_CUSHION_SITE_VERSION=1
+NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
+NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
+EOL
+	fi
+
+	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
+} 
+
+secure_access() {
+	yell "securing access to the public area"
+
+	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+	try /bin/chown -R $NEST_APP_USER_UID:$NEST_APP_GROUP $NEST_FOLDER_PUBLIC
+
+	try find $NEST_FOLDER_PUBLIC -type d -exec /bin/chmod 775 {} \;  # Change directory permissions rwxr-xr-x
+	try find $NEST_FOLDER_PUBLIC -type f -exec /bin/chmod 644 {} \;  # Change file permissions rw-r--r--
+}
+ 
+create_registry() {
+	yell "creating a new app registry"
+try cat > $NEST_APP_REGISTRY_PATH <<EOL
+{
+  "site": {
+    "home": "$NEST_SITE_HOME",
+    "email": "$NEST_SITE_EMAIL",
+    "description": "-",
+    "organization": "$NEST_SITE_ORG",
+    "version": 1
+  },
+  "location": {
+    "id": "$NEST_ID",
+    "name": "$NEST_NAME",
+    "tree": "$NEST_LOCATION_TREE",
+    "forest": "$NEST_LOCATION_FOREST"
+  },
+  "database": {
+    "vendor": "$NEST_DB_VENDOR",
+    "name": "$NEST_DB_NAME",
+    "user": "$NEST_DB_USER",
+    "password": "$NEST_DB_PASSWORD",
+    "hostname": "db",
+    "charset": "utf8",
+    "collate": "utf8_general_ci"
+  },
+  "twig":  {
+    "language" : "$NEST_LANGUAGE",
+    "version" : "$NEST_LANGUAGE_VERSION"
+  }
+}
+EOL
+}
+
+create_app_admin() {
+	ret=false
+	getent passwd $NEST_NAME >/dev/null 2>&1 && ret=true
+
+	if $ret; then
+		yell "user $NEST_NAME already exist"
+	else
+		if [ $NEST_CUSHION_ID != DEVELOPER ]; then
+			try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID -G $NEST_APP_GROUP -h "/home/$NEST_APP_ADMIN" -s /opt/bin/twigsh $NEST_APP_ADMIN 
+			try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
+
+			try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
+			try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
+			try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
+			try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+		fi
+	fi
+}
+
+change_db_password() {
+	yell "backup db"
+	.$NEST_TWIG_UTILS_FOLDER/db.sh 
+	db_change_password
+}
+
+backup_db_schema() {
+	yell "backup db schema"
+	./$NEST_TWIG_UTILS_FOLDER/db.sh 
+	db_backup_schema
+}
+
+backup_db_data() {
+	yell "backup db data"
+	./$NEST_TWIG_UTILS_FOLDER/db.sh
+	db_backup_data
+}
+
+restore_db_schema() {
+	yell "restore schema"
+	./$NEST_TWIG_UTILS_FOLDER/db.sh 
+	db_restore_schema
+}
+
+restore_db_data() {
+	yell "restore data"
+	./$NEST_TWIG_UTILS_FOLDER/db.sh 
+	db_restore_data
+}
+
+install() {
+	setup_log
+	create_cushion_settings
+	create_app_admin
+	secure_access
+
+	do_things before install base
+	run_cmd "/sbin/apk --update add" "$NEST_BASE_PACKAGES"
+
+	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+		yell "installing as master ..."
+		create_registry
+	fi
+
+	if [ $NEST_CUSHION_ID = DEVELOPER ]; then
+		try NEST_DB_HOST_IP=$(getent hosts db | awk '{ print $1 }')
+	fi
+
+	try printf "$NEST_DB_HOST_IP db" >> /etc/hosts	
+
+	do_things after install base
+
+	restore_db_schema
+	restore_db_data
+}
+
+update() {
+	do_things before update base
+	run_cmd "/sbin/apk update" "$NEST_BASE_PACKAGES"
+	run_cmd "/sbin/apk cache -v sync"
+	do_things after update base
+}
+
+upgrade() {
+	do_things before upgrade base
+	run_cmd "/sbin/apk --update upgrade" "$NEST_BASE_PACKAGES"
+	run_cmd "/sbin/apk cache -v sync"
+	do_things after upgrade base
+}
+
+remove() {
+	do_things before remove base
+
+	run_cmd "/sbin/apk del" "$NEST_BASE_PACKAGES"
+
+	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+		yell "removing the registry ..."
+		fly rm -f $NEST_APP_REGISTRY_PATH
+	fi
+
+	fly rm -f $NEST_CUSHION_SETTINGS_PATH
+
+	do_things after remove base
+}
+ 
+info() {
+	do_things before info base
+
+	yell "*** begin package stats **** "
+	try /sbin/apk stats
+	yell "*** end package stats **** "
+
+	yell "*** begin package info **** "
+	fly /sbin/apk -vv info|sort
+
+	run_cmd "/sbin/apk version" "$NEST_BASE_PACKAGES"
+	run_cmd "/sbin/apk audit" "$NEST_BASE_PACKAGES"
+
+	yell "*** end package info **** "
+
+	yell "*** begin app settings **** "
+	cat $NEST_APP_SETTINGS_PATH
+	yell "*** end app settings **** "
+
+	do_things after info base
+}
+
+up() {
+	do_things before up base
+	do_things after up base
+}
+
+down() {
+	yell "going down ..."
+
+	# this event needs to complete within 1 sec
+	# the job will be killed if it take any longer
+	# time consuming jobs should be scheduled for
+	# daily cron or other user submitted jobs
+
+	do_things before down base
+	do_things after down base                                                                                                  
+}
+
+daily() {
+	do_things before daily base
+	
+	NEST_SITE_VERSION=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.site.version')
+	try source $NEST_CUSHION_SETTINGS_PATH
+
+	yell "ugrade needed? cushion version $NEST_CUSHION_SITE_VERSION == site ver $NEST_SITE_VERSION ?  ..."		
+	if [ $NEST_CUSHION_SITE_VERSION -ne $NEST_SITE_VERSION ]; then
+		yell "cushion needs an update ..."
+		NEST_OPERATION=update /bin/twigsh $NEST_APP_TWIG_PATH
+	fi
+	
+	do_things after daily base
+}

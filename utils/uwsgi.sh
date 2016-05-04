@@ -1,0 +1,187 @@
+#################################################
+#  uwsgi twig utils
+#  (c) 2016 Inkton
+#
+#	All content that appear under NEST_HOME
+#	are shared between the nest cushions.
+# 	Use Twigs to change the application
+# 	that operate on the content.
+#
+#  Rajitha Wijayaratne
+#################################################
+
+ 
+uwsgi_init_settings() {
+	try cat >"$NEST_APP_SETTINGS_PATH" <<EOL
+;  *****************************
+;  Nest App Settings
+;  (c) 2016 Inkton
+;  *****************************
+[uwsgi]
+; load the required plugins, php is loaded as the default (0) modifier
+plugins-dir = /usr/lib/uwsgi/
+; bind the http router to port 80
+fastcgi-socket = :8888
+thunder-lock = true
+
+; metrics
+enable-metrics
+stats = :8181
+
+; leave the master running as root (to allows bind on port 80)
+master = true        
+master-as-root = true
+
+; reload whenever this config file changes
+; %p is the full path of the current config file
+touch-reload = %p
+                
+logto = $NEST_CUSHION_LOG_PATH   
+;rotate logs when filesize is higher than 20 megs
+log-maxsize = $NEST_MAX_LOG_SIZE
+show-config = true
+                 
+; drop privileges
+uid = $NEST_APP_USER
+gid = $NEST_APP_GROUP
+
+; our working dir            
+project_dir = $NEST_FOLDER_PUBLIC
+; chdir to it                                                                                                                  
+chdir = %(project_dir)                                                                                                                        
+; check for static files in it                                                                                                                
+check-static = %(project_dir)            
+
+; disable uWSGI request logging                                                                                                               
+disable-logging = true                                                                                                                       
+; use a max of NEST_PROCESSORS processes                                                                                 
+processes = $NEST_PROCESSORS                                                                                                                               
+; ...but start with only NEST_START_PROCESSORS and spawn the others on demand
+cheaper=$NEST_START_PROCESSORS
+
+# soft limit will prevent cheaper from spawning new workers
+# if workers total rss memory is equal or higher
+# we use NEST_RSS_LIMIT_SOFT soft limit below
+cheaper-rss-limit-soft =$NEST_RSS_LIMIT_SOFT
+memory-report
+
+; set process names to something meaningful
+auto-procname = true
+mime-file = /var/www/conf/mime.types
+EOL
+
+}
+
+uwsgi_create_default_pages() {
+	yell "creating default html pages"
+try cat > "$NEST_FOLDER_PUBLIC/index.html" <<EOL
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Nest</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="nest.yt Platform as a Service (PaaS) micro-container platform">
+		<meta name="keywords"pass, sass, docker, platform, developers, build, deploy, scale, php, java, dot.net, python, ruby, nodejs">
+        <link href="https://fonts.googleapis.com/css?family=Lato:100" rel="stylesheet" type="text/css">
+        <style>
+            html, body {height: 100%;}
+            body { margin: 0; padding: 0; width: 100%; display: table; font-weight: 100; font-family: 'Lato';}
+            .container {text-align: center; display: table-cell; vertical-align: middle;}
+            .content {text-align: center; display: inline-block;}
+            .title { font-weight: 300; font-size: 66px;}
+            .sub-title { font-size: 30px;}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="content">
+                <div class="title">$NEST_SITE_HOME</div>
+                <div class="sub-title ">working hard to amaze you</div>
+            </div>
+        </div>
+    </body>
+</html>
+EOL
+
+try cat > "$NEST_FOLDER_PUBLIC/404.html" <<EOL
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Nest</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Docker micro-container developer platform">
+			<meta name="keywords"docker, platform, developers, build, deploy, scale, php, java, dot.net, python, ruby, nodejs">
+        <link href="https://fonts.googleapis.com/css?family=Lato:100" rel="stylesheet" type="text/css">
+        <style>
+            html, body {height: 100%;}
+            body { margin: 0; padding: 0; width: 100%; display: table; font-weight: 100; font-family: 'Lato';}
+            .container {text-align: center; display: table-cell; vertical-align: middle;}
+            .content {text-align: center; display: inline-block;}
+            .title { font-weight: 300; font-size: 66px;}
+            .sub-title { font-size: 30px;}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="content">
+                <div class="title">Oops!</div>
+                <div class="sub-title ">That is not allowed.</div>
+            </div>
+        </div>
+    </body>
+</html>
+EOL
+
+try cat > "$NEST_FOLDER_PUBLIC/50x.html" <<EOL
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Nest</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Docker micro-container developer platform">
+		<meta name="keywords"docker, platform, developers, build, deploy, scale, php, java, dot.net, python, ruby, nodejs">
+        <link href="https://fonts.googleapis.com/css?family=Lato:100" rel="stylesheet" type="text/css">
+        <style>
+            html, body {height: 100%;}
+            body { margin: 0; padding: 0; width: 100%; display: table; font-weight: 100; font-family: 'Lato';}
+            .container {text-align: center; display: table-cell; vertical-align: middle;}
+            .content {text-align: center; display: inline-block;}
+            .title { font-weight: 300; font-size: 66px;}
+            .sub-title { font-size: 30px;}
+        </style>
+    </head> 
+    <body>
+        <div class="container">
+            <div class="content">
+                <div class="title">Oops!</div>
+                <div class="sub-title ">Something went wrong, the admin was notified. Please try again and see.</div>
+            </div>
+        </div>
+    </body>
+</html>
+EOL
+}
+
+uwsgi_new_install() {
+	init_settings
+	create_default_pages
+}
+
+uwsgi_remove_install() {
+try cat >"$NEST_APP_SETTINGS_PATH"<<EOL
+[uwsgi]
+; load the required plugins, php is loaded as the default (0) modifier
+plugins-dir = /usr/lib/uwsgi/
+; bind the http router to port 80
+socket = :8888
+EOL
+
+	fly rm -f $NEST_FOLDER_PUBLIC/index.html
+	fly rm -f $NEST_FOLDER_PUBLIC/404.html
+	fly rm -f $NEST_FOLDER_PUBLIC/50x.html
+}
+
+uwsgi_start() {
+	/usr/sbin/uwsgi --ini $NEST_APP_SETTINGS_PATH
+}
+
