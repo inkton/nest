@@ -8,6 +8,8 @@ php_init() {
 	NEST_LANGUAGE=PHP
 	NEST_LANGUAGE_VERSION=5.6.19-r0
 	NEST_LANGUAGE_PACKAGES='[
+		"uwsgi", 
+		"uwsgi-router_uwsgi", 
 		"uwsgi-php", 
 		"php-embed", 
 		"php-cli", 
@@ -39,7 +41,7 @@ php_after_install() {
 	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
 		yell "installing as master ..."
 
-		. $NEST_TWIG_UTILS_FOLDER/uwsgi.sh
+		source $NEST_TWIG_UTILS_FOLDER/uwsgi
 		uwsgi_new_install
 
 try echo "
@@ -135,7 +137,7 @@ php_after_remove() {
 	run_cmd "/sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
 
 	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
-		. $NEST_TWIG_UTILS_FOLDER/uwsgi.sh
+		source $NEST_TWIG_UTILS_FOLDER/uwsgi
 		uwsgi_remove_install
 	fi
 
@@ -163,7 +165,7 @@ php_before_up() {
 
 php_after_up() {
 	do_things after up php
-	. $NEST_TWIG_UTILS_FOLDER/uwsgi.sh
+	source $NEST_TWIG_UTILS_FOLDER/uwsgi
 	uwsgi_start
 }
                                            

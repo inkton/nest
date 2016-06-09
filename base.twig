@@ -45,7 +45,6 @@ twig_links_begin() {
 	NEST_LANGUAGE=''
 	NEST_LANGUAGE_VERSION=''
 
-	NEST_TWIG_FOLDER=$(dirname $0)
 	NEST_TWIG_UTILS_FOLDER=$NEST_TWIG_FOLDER/utils
 	NEST_TWIG_FRAMEWORKS_FOLDER=$NEST_TWIG_FOLDER/frameworks
 	NEST_TWIG_APP_FOLDER=$NEST_TWIG_FOLDER/apps
@@ -56,9 +55,9 @@ twig_links_begin() {
 	fi
 
 	if [ "$NEST_DB_VENDOR" = mysql ]; then
-		NEST_BASE_PACKAGES='["uwsgi", "uwsgi-router_uwsgi", "mariadb-client"]'
+		NEST_BASE_PACKAGES='["mariadb-client"]'
 	elif [ "$NEST_DB_VENDOR" = postgres ]; then
-		NEST_BASE_PACKAGES='["uwsgi", "uwsgi-router_uwsgi", "postgresql-client"]'
+		NEST_BASE_PACKAGES='["postgresql-client"]'
 	fi
 }
 
@@ -206,7 +205,7 @@ try cat > $NEST_APP_REGISTRY_PATH <<EOL
     "name": "$NEST_DB_NAME",
     "user": "$NEST_DB_USER",
     "password": "$NEST_DB_PASSWORD",
-    "hostname": "db",
+    "hostname": "$NEST_DB_HOST_NAME",
     "charset": "utf8",
     "collate": "utf8_general_ci"
   },
@@ -239,31 +238,31 @@ create_app_admin() {
 
 change_db_password() {
 	yell "backup db"
-	.$NEST_TWIG_UTILS_FOLDER/db.sh 
+	try source $NEST_TWIG_UTILS_FOLDER/db 
 	db_change_password
 }
 
 backup_db_schema() {
 	yell "backup db schema"
-	./$NEST_TWIG_UTILS_FOLDER/db.sh 
+	try source $NEST_TWIG_UTILS_FOLDER/db 
 	db_backup_schema
 }
 
 backup_db_data() {
 	yell "backup db data"
-	./$NEST_TWIG_UTILS_FOLDER/db.sh
+	try source $NEST_TWIG_UTILS_FOLDER/db
 	db_backup_data
 }
 
 restore_db_schema() {
 	yell "restore schema"
-	./$NEST_TWIG_UTILS_FOLDER/db.sh 
+	try source $NEST_TWIG_UTILS_FOLDER/db 
 	db_restore_schema
 }
 
 restore_db_data() {
 	yell "restore data"
-	./$NEST_TWIG_UTILS_FOLDER/db.sh 
+	try source $NEST_TWIG_UTILS_FOLDER/db 
 	db_restore_data
 }
 
@@ -280,12 +279,6 @@ install() {
 		yell "installing as master ..."
 		create_registry
 	fi
-
-	if [ $NEST_CUSHION_ID = DEVELOPER ]; then
-		try NEST_DB_HOST_IP=$(getent hosts db | awk '{ print $1 }')
-	fi
-
-	try printf "$NEST_DB_HOST_IP db" >> /etc/hosts	
 
 	do_things after install base
 
