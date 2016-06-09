@@ -14,7 +14,7 @@ db_init() {
 	DB_NAME=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.database.name')
 	DB_USER=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.database.user')
 	DB_PASSWORD=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.database.password')
-	DB_HOSTNAME=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.database.db')
+	DB_HOSTNAME=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.database.hostname')
 }
 
 db_change_password() {
