@@ -32,9 +32,9 @@ db_backup_schema() {
 	db_init
 
 	if [ "$NEST_DB_VENDOR" = mysql ]; then
-		try mysqldump --no-data $NEST_DB_BACKUP_OPTIONS --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME > $NEST_APP_DB_CREATE_SCRIPT_PATH
+		try mysqldump --no-data $NEST_DB_BACKUP_OPTIONS --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME > $NEST_APP_DB_SCHEMA_PATH
 	elif [ "$NEST_DB_VENDOR" = postgres ]; then
-		try pg_dump --schema-only --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --verbose --file  > $NEST_APP_DB_CREATE_SCRIPT_PATH
+		try pg_dump --schema-only --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --verbose --file  > $NEST_APP_DB_SCHEMA_PATH
 	fi
 }
 
@@ -42,9 +42,9 @@ db_backup_data() {
 	db_init
 
 	if [ "$NEST_DB_VENDOR" = mysql ]; then
-		try mysqldump --no-create-db --no-create-info $NEST_DB_BACKUP_OPTIONS --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME > $NEST_APP_DB_DATA_SCRIPT_PATH
+		try mysqldump --no-create-db --no-create-info $NEST_DB_BACKUP_OPTIONS --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME > $NEST_APP_DB_DATA_PATH
 	elif [ "$NEST_DB_VENDOR" = postgres ]; then
-		try pg_dump --data-only --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --verbose --file  > $NEST_APP_DB_DATA_SCRIPT_PATH
+		try pg_dump --data-only --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --verbose --file  > $NEST_APP_DB_DATA_PATH
 	fi
 } 
 
@@ -52,9 +52,9 @@ db_restore_schema() {
 	db_init
 
 	if [ "$NEST_DB_VENDOR" = mysql ]; then	
-		try mysql --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME < $NEST_APP_DB_CREATE_SCRIPT_PATH
+		try mysql --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME < $NEST_APP_DB_SCHEMA_PATH
 	elif [ "$NEST_DB_VENDOR" = postgres ]; then
-		pg_restore --clean --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --dbname $DB_NAME --verbose < $NEST_APP_DB_CREATE_SCRIPT_PATH
+		pg_restore --clean --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --dbname $DB_NAME --verbose < $NEST_APP_DB_SCHEMA_PATH
 	fi
 }
 
@@ -62,9 +62,9 @@ db_restore_data() {
 	db_init
 
 	if [ "$NEST_DB_VENDOR" = mysql ]; then	
-		try mysql --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME < $NEST_APP_DB_DATA_SCRIPT_PATH
+		try mysql --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME < $NEST_APP_DB_DATA_PATH
 	elif [ "$NEST_DB_VENDOR" = postgres ]; then
-		try pg_restore --clean --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --dbname $DB_NAME --verbose < $NEST_APP_DB_DATA_SCRIPT_PATH
+		try pg_restore --clean --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --dbname $DB_NAME --verbose < $NEST_APP_DB_DATA_PATH
 	fi
 }
 
