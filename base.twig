@@ -225,7 +225,7 @@ create_app_admin() {
 		yell "user $NEST_NAME already exist"
 	else
 		if [ $NEST_CUSHION_ID != DEVELOPER ]; then
-			try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID -G $NEST_APP_GROUP -h "/home/$NEST_APP_ADMIN" -s /opt/bin/twigsh $NEST_APP_ADMIN 
+			try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID -G $NEST_APP_GROUP -h "/home/$NEST_APP_ADMIN" -s /opt/sbin/nest-twig/bin/twigsh $NEST_APP_ADMIN 
 			try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
 
 			try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
@@ -363,7 +363,7 @@ daily() {
 	yell "ugrade needed? cushion version $NEST_CUSHION_SITE_VERSION == site ver $NEST_SITE_VERSION ?  ..."		
 	if [ $NEST_CUSHION_SITE_VERSION -ne $NEST_SITE_VERSION ]; then
 		yell "cushion needs an update ..."
-		NEST_OPERATION=update /bin/twigsh $NEST_APP_TWIG_PATH
+		NEST_OPERATION=update /bin/sh $NEST_APP_TWIG_PATH
 	fi
 	
 	do_things after daily base
