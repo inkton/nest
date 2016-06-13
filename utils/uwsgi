@@ -163,8 +163,8 @@ EOL
 }
 
 uwsgi_new_install() {
-	init_settings
-	create_default_pages
+	uwsgi_init_settings
+	uwsgi_create_default_pages
 }
 
 uwsgi_remove_install() {
