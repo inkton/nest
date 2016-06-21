@@ -34,8 +34,8 @@ app_before_upgrade() {
 	yell "-> app_before_upgrade"; 
 } 
 
-app_before_up() {
-	yell "-> app_before_up"; 
+app_before_start() {
+	yell "-> app_before_start"; 
 }
 
 app_before_daily() {
@@ -43,11 +43,10 @@ app_before_daily() {
 	
 	# called anytime between 0-1 HRS UTC
 
-	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 
 		# running aginst the master ensures
-		# the job is only run once. if not 
-		# the job will be run on all cushions.
+		# the job is only run once. 
 		
 		if [[ $(date +%u) -eq 1 ]] ; then
 			yell "-> do weekly tasks "; 

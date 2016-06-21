@@ -50,8 +50,8 @@ twig_links_begin() {
 	NEST_TWIG_APP_FOLDER=$NEST_TWIG_FOLDER/apps
 
 	if [ -z "$NEST_OPERATION" ]; then
-		# default operation is up
-		NEST_OPERATION=up
+		# default operation is start
+		NEST_OPERATION=start
 	fi
 
 	if [ "$NEST_DB_VENDOR" = mysql ]; then
@@ -224,15 +224,13 @@ create_app_admin() {
 	if $ret; then
 		yell "user $NEST_NAME already exist"
 	else
-		if [ $NEST_CUSHION_ID != DEVELOPER ]; then
-			try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID -G $NEST_APP_GROUP -h "/home/$NEST_APP_ADMIN" $NEST_APP_ADMIN 
-			try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
+		try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID -G $NEST_APP_GROUP -h "/home/$NEST_APP_ADMIN" $NEST_APP_ADMIN 
+		try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
 
-			try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
-			try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
-			try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
-			try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
-		fi
+		try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
+		try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
+		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
+		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
 	fi
 }
 
@@ -275,7 +273,7 @@ install() {
 	do_things before install base
 	run_cmd "/sbin/apk --update add" "$NEST_BASE_PACKAGES"
 
-	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		yell "installing as master ..."
 		create_registry
 	fi
@@ -305,7 +303,7 @@ remove() {
 
 	run_cmd "/sbin/apk del" "$NEST_BASE_PACKAGES"
 
-	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		yell "removing the registry ..."
 		fly rm -f $NEST_APP_REGISTRY_PATH
 	fi
@@ -337,12 +335,12 @@ info() {
 	do_things after info base
 }
 
-up() {
-	do_things before up base
-	do_things after up base
+start() {
+	do_things before start base
+	do_things after start base
 }
 
-down() {
+stop() {
 	yell "going down ..."
 
 	# this event needs to complete within 1 sec
@@ -350,8 +348,8 @@ down() {
 	# time consuming jobs should be scheduled for
 	# daily cron or other user submitted jobs
 
-	do_things before down base
-	do_things after down base                                                                                                  
+	do_things before stop base
+	do_things after stop base                                                                                                  
 }
 
 daily() {
