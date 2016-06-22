@@ -94,9 +94,14 @@ php-set = post_max_size=$NEST_PHP_POST_MAX_SIZE
 	fi
 
 	yell "->install composer"; 
-	/usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
-	/usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
-	/usr/bin/php -r "unlink('/tmp/composer-setup.php');"
+
+	if [ -f /usr/local/nest/sbin/composer.phar ]; then
+		try cp /usr/local/nest/sbin/composer.phar /bin
+	else
+		try /usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
+		try /usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
+		try /usr/bin/php -r "unlink('/tmp/composer-setup.php');"
+	fi
 
 	do_things after install php
 }
@@ -110,8 +115,8 @@ php_after_update() {
 	yell "-> after_php_update"; 
 	run_cmd "/sbin/apk update" "$NEST_LANGUAGE_PACKAGES"	
 	
-	/bin/composer self-update
-	/bin/composer update
+	try /bin/composer self-update
+	try /bin/composer update
 
 	do_things after update php
 }
@@ -141,8 +146,8 @@ php_after_remove() {
 		uwsgi_remove_install
 	fi
 
-	composer global remove phpunit/phpunit
-	rm -rf /bin/composer
+	try composer global remove phpunit/phpunit
+	try rm -rf /bin/composer
 
 	do_things after remove php
 }
