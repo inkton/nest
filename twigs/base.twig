@@ -14,7 +14,7 @@
 #	stage 1 - create docker
 #			base packages sudo jq openssl ca-certificates installed 
 #			user group created
-#	stage 2 - create platform
+#	stage 2 - init platform
 #			create logs
 #			create cushion settings
 #			create app admin
@@ -213,8 +213,7 @@ create_app_admin() {
 	fi
 }
 
-create_cushion() {
-
+initialise_cushion() {
 	# ----------------
 	#  stage 2 create
 	# ----------------
@@ -232,14 +231,15 @@ destroy_cushion() {
 
 install() {
 	do_things before install base
+
 	run_cmd "/sbin/apk --update add" "$NEST_BASE_PACKAGES"
+
+	do_things after install base
 
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		yell "installing as master ..."
 		create_registry
 	fi
-
-	do_things after install base
 
 	restore_db_schema
 	restore_db_data
