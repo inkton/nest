@@ -29,7 +29,7 @@ wordpress_before_update() {
 
 wordpress_after_update() { 
 	yell "-> after_wordpress_update"; 
-	run_cmd "/sbin/apk --progress update" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk --progress update" "$NEST_LANGUAGE_PACKAGES"
 	do_things after update wordpress
 }
 
@@ -40,7 +40,7 @@ wordpress_before_upgrade() {
 
 wordpress_after_upgrade() { 
 	yell "-> after_wordpress_upgrade"; 
-	run_cmd "/sbin/apk --progress --update upgrade" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk --progress --update upgrade" "$NEST_LANGUAGE_PACKAGES"
 	do_things after upgrade wordpress
 }
 

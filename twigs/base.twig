@@ -232,7 +232,7 @@ destroy_cushion() {
 install() {
 	do_things before install base
 
-	run_cmd "/sbin/apk --update add" "$NEST_BASE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk --update add" "$NEST_BASE_PACKAGES"
 
 	do_things after install base
 
@@ -247,22 +247,22 @@ install() {
 
 update() {
 	do_things before update base
-	run_cmd "/sbin/apk update" "$NEST_BASE_PACKAGES"
-	run_cmd "/sbin/apk cache -v sync"
+	run_cmd "/usr/bin/sudo /sbin/apk update" "$NEST_BASE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk cache -v sync"
 	do_things after update base
 }
 
 upgrade() {
 	do_things before upgrade base
-	run_cmd "/sbin/apk --update upgrade" "$NEST_BASE_PACKAGES"
-	run_cmd "/sbin/apk cache -v sync"
+	run_cmd "/usr/bin/sudo /sbin/apk --update upgrade" "$NEST_BASE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk cache -v sync"
 	do_things after upgrade base
 }
 
 remove() {
 	do_things before remove base
 
-	run_cmd "/sbin/apk del" "$NEST_BASE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_BASE_PACKAGES"
 
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		yell "removing the registry ..."
@@ -273,19 +273,19 @@ remove() {
 
 	do_things after remove base
 }
- 
+  
 info() {
 	do_things before info base
 
 	yell "*** begin package stats **** "
-	try /sbin/apk stats
+	try /usr/bin/sudo /sbin/apk stats
 	yell "*** end package stats **** "
 
 	yell "*** begin package info **** "
-	fly /sbin/apk -vv info|sort
+	fly /usr/bin/sudo /sbin/apk -vv info|sort
 
-	run_cmd "/sbin/apk version" "$NEST_BASE_PACKAGES"
-	run_cmd "/sbin/apk audit" "$NEST_BASE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk version" "$NEST_BASE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk audit" "$NEST_BASE_PACKAGES"
 
 	yell "*** end package info **** "
 
