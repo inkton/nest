@@ -1,14 +1,7 @@
-#################################################
-#  db twig utils
-#  (c) 2016 Inkton
-#  ramal ratne
+# ------------------------------------------------------
+#	db twig utils
+#	(c) 2016 Inkton
 #  
-#	All content that appear under NEST_HOME
-#	are shared between the nest cushions.
-# 	Use Twigs to change the application
-# 	that operate on the content.
-#
-#################################################
 
 db_init() {
 	DB_NAME=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.database.name')
@@ -51,7 +44,7 @@ db_backup_data() {
 db_restore_schema() {
 	db_init
 
-	if [ "$NEST_DB_VENDOR" = mysql ]; then	
+	if [ "$NEST_DB_VENDOR" = mysql ]; then
 		try mysql --user $DB_USER -p$DB_PASSWORD --host $DB_HOSTNAME $DB_NAME < $NEST_APP_DB_SCHEMA_PATH
 	elif [ "$NEST_DB_VENDOR" = postgres ]; then
 		pg_restore --clean --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --dbname $DB_NAME --verbose < $NEST_APP_DB_SCHEMA_PATH

@@ -1,15 +1,7 @@
-#################################################
-#  uwsgi twig utils
-#  (c) 2016 Inkton
+# ------------------------------------------------------
+#	uwsgi twig utils
+#	(c) 2016 Inkton
 #
-#	All content that appear under NEST_HOME
-#	are shared between the nest cushions.
-# 	Use Twigs to change the application
-# 	that operate on the content.
-#
-#  Rajitha Wijayaratne
-#################################################
-
  
 uwsgi_init_settings() {
 	try cat >"$NEST_APP_SETTINGS_PATH" <<EOL
@@ -23,6 +15,12 @@ plugins-dir = /usr/lib/uwsgi/
 ; bind the http router to port 80
 fastcgi-socket = :8888
 thunder-lock = true
+pidfile = /tmp/uwsgi-pid
+
+; respawn processors taking more than 20sec
+harakiri = 20
+; respawn processors after serving max-requests
+max-requests = 5000
 
 ; metrics
 enable-metrics
@@ -182,6 +180,14 @@ EOL
 }
 
 uwsgi_start() {
-	/usr/sbin/uwsgi --ini $NEST_APP_SETTINGS_PATH
+	if [ $NEST_CONTAINER_TYPE == "cushion" ]; then
+		# run in the foregrund in production
+		/usr/sbin/uwsgi --ini $NEST_APP_SETTINGS_PATH
+	else
+		/usr/sbin/uwsgi --ini $NEST_APP_SETTINGS_PATH --daemonize $NEST_CUSHION_LOG_PATH
+	fi
 }
 
+uwsgi_stop() {
+	sudo kill -SIGTERM `cat /tmp/uwsgi-pid`	
+}

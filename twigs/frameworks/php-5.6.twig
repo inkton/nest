@@ -1,8 +1,8 @@
-#################################################
-#  PHP 5.6 Twig
-#  (c) 2016 Inkton
-#################################################
-.
+# ------------------------------------------------------
+#	PHP 5.6 Twig
+#	(c) 2016 Inkton
+#
+
 php_init() {
 	yell "-> php init"; 
 	NEST_LANGUAGE=PHP
@@ -38,7 +38,7 @@ php_after_install() {
 	yell "-> after_php_install";
 	run_cmd "/sbin/apk --update add" "$NEST_LANGUAGE_PACKAGES"
 
-	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		yell "installing as master ..."
 
 		source $NEST_TWIG_UTILS_FOLDER/uwsgi
@@ -94,9 +94,14 @@ php-set = post_max_size=$NEST_PHP_POST_MAX_SIZE
 	fi
 
 	yell "->install composer"; 
-	/usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
-	/usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
-	/usr/bin/php -r "unlink('/tmp/composer-setup.php');"
+
+	if [ -f /usr/local/nest/sbin/composer.phar ]; then
+		try cp /usr/local/nest/sbin/composer.phar /bin
+	else
+		try /usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
+		try /usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
+		try /usr/bin/php -r "unlink('/tmp/composer-setup.php');"
+	fi
 
 	do_things after install php
 }
@@ -110,8 +115,8 @@ php_after_update() {
 	yell "-> after_php_update"; 
 	run_cmd "/sbin/apk update" "$NEST_LANGUAGE_PACKAGES"	
 	
-	/bin/composer self-update
-	/bin/composer update
+	try /bin/composer self-update
+	try /bin/composer update
 
 	do_things after update php
 }
@@ -136,13 +141,13 @@ php_after_remove() {
 	yell "-> after_php_remove"; 
 	run_cmd "/sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
 
-	if [ $NEST_CUSHION_MASTER -eq 1 ]; then
+	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		source $NEST_TWIG_UTILS_FOLDER/uwsgi
 		uwsgi_remove_install
 	fi
 
-	composer global remove phpunit/phpunit
-	rm -rf /bin/composer
+	try composer global remove phpunit/phpunit
+	try /bin/rm -rf /bin/composer
 
 	do_things after remove php
 }
@@ -159,22 +164,24 @@ php_after_info() {
 	do_things after info php
 }
 
-php_before_up() {
-	do_things before up php
+php_before_start() {
+	do_things before start php
 }                                            
 
-php_after_up() {
-	do_things after up php
+php_after_start() {
+	do_things after start php
 	source $NEST_TWIG_UTILS_FOLDER/uwsgi
 	uwsgi_start
 }
                                            
-php_before_down() {
-	do_things before down php
+php_before_stop() {
+	do_things before stop php
+	source $NEST_TWIG_UTILS_FOLDER/uwsgi
+	uwsgi_stop
 }
 
-php_after_down() {
-	do_things after down php
+php_after_stop() {
+	do_things after stop php
 }
 
 php_before_daily() {

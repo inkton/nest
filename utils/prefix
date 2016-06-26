@@ -1,0 +1,38 @@
+# ------------------------------------------------------
+#	prefix utils
+#	(c) 2016 Inkton
+#  
+
+null_callback() { 
+	: 
+}
+
+yell() { 
+	echo `date --utc +%Y%m%d_%H%M%SZ` "$0: $* "; 
+}
+
+die() {
+	yell `date --utc +%Y%m%d_%H%M%SZ` "$0: $* " "$*"; exit 111; 
+}
+
+try() {
+	"$@" || die "cannot $*" ; 
+}
+
+fly() {
+ "$@"; 
+}
+
+asadmin() {
+	/bin/su - "$NEST_APP_ADMIN" -c "${*:1}"; 
+} 
+
+function_exists()  { 
+	type $1 | /bin/grep -q 'shell function'; 
+}
+
+run_cmd() {                               
+	echo $2 | jq -r '.[]' | while read i; do                         
+			try $1 $i       
+			done                                          
+}  
