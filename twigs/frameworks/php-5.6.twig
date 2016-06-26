@@ -1,8 +1,8 @@
-#################################################
-#  PHP 5.6 Twig
-#  (c) 2016 Inkton
-#################################################
-.
+# ------------------------------------------------------
+#	PHP 5.6 Twig
+#	(c) 2016 Inkton
+#
+
 php_init() {
 	yell "-> php init"; 
 	NEST_LANGUAGE=PHP
@@ -147,7 +147,7 @@ php_after_remove() {
 	fi
 
 	try composer global remove phpunit/phpunit
-	try rm -rf /bin/composer
+	try /bin/rm -rf /bin/composer
 
 	do_things after remove php
 }
@@ -176,6 +176,8 @@ php_after_start() {
                                            
 php_before_stop() {
 	do_things before stop php
+	source $NEST_TWIG_UTILS_FOLDER/uwsgi
+	uwsgi_stop
 }
 
 php_after_stop() {

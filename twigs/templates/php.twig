@@ -1,16 +1,13 @@
-#################################################
-#  PHP App Twig Template
-#  (c) 2016 Inkton
-#################################################
 #!/bin/sh
+# ------------------------------------------------------
+#	PHP App Twig Template
+#	(c) 2016 Inkton
+#
 
-. /opt/sbin/nest-twig/base.twig
-. /opt/sbin/nest-twig/frameworks/php-5.6.twig
+. $NEST_FOLDER/twigs/base.twig
+. $NEST_FOLDER/twigs/frameworks/php-5.6.twig
 
 app_init() {
-	NEST_SITE_HOME=example.org
-	NEST_SITE_EMAIL=contact@example.org
-	NEST_SITE_ORG="Example Inc"
 }
 
 app_shutdown() {

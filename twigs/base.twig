@@ -1,45 +1,28 @@
-#################################################
-#  Base Twig
-#  (c) 2016 Inkton
+# ------------------------------------------------------
+#	Base Twig
+#	(c) 2016 Inkton
 #
-#	All content that appear under NEST_HOME
-#	are shared between the nest cushions.
-# 	Use Twigs to change the application
-# 	that operate on the content.
+#	the data model
+#		forest [1 .. n]
+#			tree [1 .. n]
+#				nest [1 .. n]
+#					cushion [1 .. n]
+#						twig [1 .. n]
 #
-#  Rajitha Wijayaratne
-#################################################
+#	stages of cushion creation
+#
+#	stage 1 - create docker
+#			base packages sudo jq openssl ca-certificates installed 
+#			user group created
+#	stage 2 - create platform
+#			create logs
+#			create cushion settings
+#			create app admin
+#
 
-null_callback() { 
-	: 
-}
-
-yell() { 
-	echo `date --utc +%Y%m%d_%H%M%SZ` "$0: $* "; 
-}
-
-die() {
-	yell `date --utc +%Y%m%d_%H%M%SZ` "$0: $* " "$*"; exit 111; 
-}
-
-try() {
-	"$@" || die "cannot $*" ; 
-}
-
-fly() {
- "$@"; 
-}
-
-asadmin() {
-	sudo su - "$NEST_APP_ADMIN" -c "${*:1}"; 
-} 
-
-function_exists()  { 
-	type $1 | grep -q 'shell function'; 
-}
+source $NEST_FOLDER/utils/prefix
 
 twig_links_begin() {
-	NEST_CUSHION_TYPE=base
 	NEST_BASE_VERSION=1.0
 	NEST_TWIG_RUN_TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
 	NEST_LANGUAGE=''
@@ -105,13 +88,13 @@ link_twigs() {
 init_after() {
 	local from=$1
 	local call=twig_init_"$from"
-	eval "\${$call}"	
+	eval "\${$call}"
 }
 
 shutdown_before() {
 	local from=$1
 	local call=twig_shutdown_"$from"
-	eval "\${$call}"	
+	eval "\${$call}"
 }
 
 do_things() {
@@ -138,22 +121,16 @@ twig_links_end()  {
 	base_shutdown
 }
 
-run_cmd() {                               
-	echo $2 | jq -r '.[]' | while read i; do                         
-			try $1 $i       
-			done                                          
-}  
-
-setup_log() {
-	if [ -f "$NEST_CUSHION_LOG_PATH" ]; then
-		> $NEST_CUSHION_SETTINGS_PATH
-	else
-		try /bin/touch $NEST_CUSHION_LOG_PATH
-		try /bin/chmod -R a+w $NEST_CUSHION_LOG_PATH
-	fi
+create_log() {
+        if [ -f "$NEST_CUSHION_LOG_PATH" ]; then
+                > $NEST_CUSHION_LOG_PATH
+        else
+                try /bin/touch $NEST_CUSHION_LOG_PATH
+                try /bin/chmod -R a+w $NEST_CUSHION_LOG_PATH
+        fi
 }
 
-create_cushion_settings() {
+create_settings() {
 
 	if [ -f "$NEST_CUSHION_SETTINGS_PATH" ]; then
 		try source $NEST_CUSHION_SETTINGS_PATH
@@ -164,11 +141,12 @@ create_cushion_settings() {
 		fi
 
 	else
-try cat > $NEST_CUSHION_SETTINGS_PATH <<EOL
-NEST_CUSHION_SITE_VERSION=1
+		try touch $NEST_CUSHION_SETTINGS_PATH
+		try echo "NEST_CUSHION_SITE_VERSION=1
 NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
 NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
-EOL
+" > $NEST_CUSHION_SETTINGS_PATH
+
 	fi
 
 	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
@@ -235,42 +213,24 @@ create_app_admin() {
 	fi
 }
 
-change_db_password() {
-	yell "backup db"
-	try source $NEST_TWIG_UTILS_FOLDER/db 
-	db_change_password
+create_cushion() {
+
+	# ----------------
+	#  stage 2 create
+	# ----------------
+		
+	create_log
+	create_settings
+	create_app_admin
 }
 
-backup_db_schema() {
-	yell "backup db schema"
-	try source $NEST_TWIG_UTILS_FOLDER/db 
-	db_backup_schema
-}
-
-backup_db_data() {
-	yell "backup db data"
-	try source $NEST_TWIG_UTILS_FOLDER/db
-	db_backup_data
-}
-
-restore_db_schema() {
-	yell "restore schema"
-	try source $NEST_TWIG_UTILS_FOLDER/db 
-	db_restore_schema
-}
-
-restore_db_data() {
-	yell "restore data"
-	try source $NEST_TWIG_UTILS_FOLDER/db 
-	db_restore_data
+destroy_cushion() {
+	rm -f $$NEST_CUSHION_LOG_PATH
+	rm -f $NEST_CUSHION_SETTINGS_PATH
+	deluser --remove-home $NEST_APP_ADMIN
 }
 
 install() {
-	setup_log
-	create_cushion_settings
-	create_app_admin
-	secure_access
-
 	do_things before install base
 	run_cmd "/sbin/apk --update add" "$NEST_BASE_PACKAGES"
 
@@ -366,4 +326,26 @@ daily() {
 	fi
 	
 	do_things after daily base
+}
+
+change_db_password() {
+	yell "backup db"
+	try source $NEST_TWIG_UTILS_FOLDER/db 
+	db_change_password
+}
+
+backup_db() {
+	yell "backup db"
+	try source $NEST_TWIG_UTILS_FOLDER/db 
+	
+	db_backup_schema
+	db_backup_data
+}
+
+restore_db() {
+	yell "restore schema"
+	try source $NEST_TWIG_UTILS_FOLDER/db
+	
+	db_restore_schema
+	db_restore_data	
 }
