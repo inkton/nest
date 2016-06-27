@@ -36,7 +36,7 @@ php_before_install() {
 
 php_after_install() { 
 	yell "-> after_php_install";
-	run_cmd "/sbin/apk --update add" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk --update add" "$NEST_LANGUAGE_PACKAGES"
 
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		yell "installing as master ..."
@@ -99,7 +99,7 @@ php-set = post_max_size=$NEST_PHP_POST_MAX_SIZE
 		try cp /usr/local/nest/sbin/composer.phar /bin
 	else
 		try /usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
-		try /usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
+		try /usr/bin/sudo /usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
 		try /usr/bin/php -r "unlink('/tmp/composer-setup.php');"
 	fi
 
@@ -113,10 +113,10 @@ php_before_update() {
 
 php_after_update() { 
 	yell "-> after_php_update"; 
-	run_cmd "/sbin/apk update" "$NEST_LANGUAGE_PACKAGES"	
+	run_cmd "/usr/bin/sudo /sbin/apk update" "$NEST_LANGUAGE_PACKAGES"	
 	
-	try /bin/composer self-update
-	try /bin/composer update
+	try /usr/bin/sudo /bin/composer self-update
+	try /usr/bin/sudo /bin/composer update
 
 	do_things after update php
 }
@@ -128,7 +128,7 @@ php_before_upgrade() {
 
 php_after_upgrade() { 
 	yell "-> after_php_upgrade"; 
-	run_cmd "/sbin/apk --update upgrade" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk --update upgrade" "$NEST_LANGUAGE_PACKAGES"
 	do_things after upgrade php
 }
 
@@ -139,15 +139,15 @@ php_before_remove() {
 
 php_after_remove() { 
 	yell "-> after_php_remove"; 
-	run_cmd "/sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
 
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		source $NEST_TWIG_UTILS_FOLDER/uwsgi
 		uwsgi_remove_install
 	fi
 
-	try composer global remove phpunit/phpunit
-	try /bin/rm -rf /bin/composer
+	try /usr/bin/sudo composer global remove phpunit/phpunit
+	try /usr/bin/sudo /bin/rm -rf /bin/composer
 
 	do_things after remove php
 }
@@ -159,8 +159,8 @@ php_before_info() {
 
 php_after_info() { 
 	yell "-> after_php_info"; 
-	run_cmd "/sbin/apk version" "$NEST_LANGUAGE_PACKAGES"
-	run_cmd "/sbin/apk audit" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk version" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk audit" "$NEST_LANGUAGE_PACKAGES"
 	do_things after info php
 }
 
