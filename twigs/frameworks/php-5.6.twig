@@ -96,11 +96,11 @@ php-set = post_max_size=$NEST_PHP_POST_MAX_SIZE
 	yell "->install composer"; 
 
 	if [ -f /usr/local/nest/sbin/composer.phar ]; then
-		try cp /usr/local/nest/sbin/composer.phar /bin
+		try /usr/bin/sudo cp /usr/local/nest/sbin/composer.phar /bin
 	else
-		try /usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
+		try /usr/bin/sudo /usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
 		try /usr/bin/sudo /usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
-		try /usr/bin/php -r "unlink('/tmp/composer-setup.php');"
+		try /usr/bin/sudo /usr/bin/php -r "unlink('/tmp/composer-setup.php');"
 	fi
 
 	do_things after install php
