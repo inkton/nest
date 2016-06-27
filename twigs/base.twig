@@ -112,7 +112,6 @@ base_init() {
 base_shutdown() {
 	yell "<- end ->"; 
 	shutdown_before base
-	secure_access
 }
 
 twig_links_end()  {
@@ -155,11 +154,13 @@ NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 secure_access() {
 	yell "securing access to the public area"
 
-	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
-	try /bin/chown -R $NEST_APP_USER_UID:$NEST_APP_GROUP $NEST_FOLDER_PUBLIC
+	try /usr/bin/sudo /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+	try /usr/bin/sudo /bin/chown -R $NEST_APP_USER_UID:$NEST_APP_GROUP $NEST_FOLDER_PUBLIC
 
-	try find $NEST_FOLDER_PUBLIC -type d -exec /bin/chmod 775 {} \;  # Change directory permissions rwxr-xr-x
-	try find $NEST_FOLDER_PUBLIC -type f -exec /bin/chmod 644 {} \;  # Change file permissions rw-r--r--
+	# Change directory permissions rwxr-xr-x
+	try find $NEST_FOLDER_PUBLIC -type d -exec /usr/bin/sudo /bin/chmod 775 {} \;
+	# Change file permissions rw-r--r--
+	try find $NEST_FOLDER_PUBLIC -type f -exec /usr/bin/sudo /bin/chmod 644 {} \;  
 }
  
 create_registry() {
@@ -188,7 +189,7 @@ try cat > $NEST_APP_REGISTRY_PATH <<EOL
     "charset": "utf8",
     "collate": "utf8_general_ci"
   },
-  "twig":  {
+  "type":  {
     "language" : "$NEST_LANGUAGE",
     "version" : "$NEST_LANGUAGE_VERSION"
   }
@@ -203,7 +204,12 @@ create_app_admin() {
 	if $ret; then
 		yell "user $NEST_NAME already exist"
 	else
-		try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID -G $NEST_APP_GROUP -h "/home/$NEST_APP_ADMIN" $NEST_APP_ADMIN 
+		try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID \
+				-G $NEST_APP_GROUP \
+				-s /bin/sh \
+				-h "/home/$NEST_APP_ADMIN" \
+				$NEST_APP_ADMIN 
+
 		try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
 
 		try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
@@ -241,8 +247,8 @@ install() {
 		create_registry
 	fi
 
-	restore_db_schema
-	restore_db_data
+	restore_db
+	secure_access
 }
 
 update() {
@@ -250,6 +256,7 @@ update() {
 	run_cmd "/usr/bin/sudo /sbin/apk update" "$NEST_BASE_PACKAGES"
 	run_cmd "/usr/bin/sudo /sbin/apk cache -v sync"
 	do_things after update base
+	secure_access
 }
 
 upgrade() {
@@ -257,6 +264,7 @@ upgrade() {
 	run_cmd "/usr/bin/sudo /sbin/apk --update upgrade" "$NEST_BASE_PACKAGES"
 	run_cmd "/usr/bin/sudo /sbin/apk cache -v sync"
 	do_things after upgrade base
+	secure_access
 }
 
 remove() {
@@ -272,6 +280,7 @@ remove() {
 	fly rm -f $NEST_CUSHION_SETTINGS_PATH
 
 	do_things after remove base
+	secure_access
 }
   
 info() {
@@ -326,6 +335,7 @@ daily() {
 	fi
 	
 	do_things after daily base
+	secure_access
 }
 
 change_db_password() {
