@@ -65,7 +65,7 @@ memory-report
 
 ; set process names to something meaningful
 auto-procname = true
-mime-file = /var/www/conf/mime.types
+mime-file = /var/app/app.mime
 EOL
 
 }
