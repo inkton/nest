@@ -15,9 +15,8 @@
 #			base packages sudo jq openssl ca-certificates installed 
 #			user group created
 #	stage 2 - init platform
-#			create logs
-#			create cushion settings
 #			create app admin
+#			create log folder
 #
 
 source $NEST_FOLDER/utils/prefix
@@ -34,8 +33,8 @@ twig_links_begin() {
 	NEST_TWIG_APP_FOLDER=$NEST_TWIG_FOLDER/apps
 
 	if [ -z "$NEST_OPERATION" ]; then
-		# default operation is start
-		NEST_OPERATION=start
+		# default operation is up
+		NEST_OPERATION=up
 	fi
 
 	if [ "$NEST_DB_VENDOR" = mysql ]; then
@@ -142,6 +141,10 @@ create_settings() {
 	else
 		try touch $NEST_CUSHION_SETTINGS_PATH
 		try echo "NEST_CUSHION_SITE_VERSION=1
+NEST_CUSHION_APP=$NEST_APP
+NEST_CUSHION_APP_VERSION=$NEST_APP_VERSION
+NEST_CUSHION_LANGUAGE_FRAMEWORK=$NEST_LANGUAGE_FRAMEWORK
+NEST_CUSHION_LANGUAGE_FRAMEWORK_VERSION=$NEST_LANGUAGE_FRAMEWORK_VERSION
 NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
 NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 " > $NEST_CUSHION_SETTINGS_PATH
@@ -189,9 +192,19 @@ try cat > $NEST_APP_REGISTRY_PATH <<EOL
     "charset": "utf8",
     "collate": "utf8_general_ci"
   },
-  "type":  {
-    "language" : "$NEST_LANGUAGE",
-    "version" : "$NEST_LANGUAGE_VERSION"
+  "installed":  {
+		"language": {
+					"name" : "$NEST_LANGUAGE",
+					"version" : "$NEST_LANGUAGE_VERSION"
+		},
+		"framework": {
+					"name" : "$NEST_LANGUAGE_FRAMEWORK",
+					"version" : "$NEST_LANGUAGE_FRAMEWORK_VERSION"
+		},
+		"application": {
+					"name" : "$NEST_APP",
+					"version" : "$NEST_APP_VERSION"
+		}
   }
 }
 EOL
@@ -225,7 +238,6 @@ initialise_cushion() {
 	# ----------------
 		
 	create_log
-	create_settings
 	create_app_admin
 }
 
@@ -242,12 +254,13 @@ install() {
 
 	do_things after install base
 
-	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
-		yell "installing as master ..."
+	if [ $NEST_CONTAINER_TYPE == "cushion_master" || $NEST_CONTAINER_TYPE == "developer" ]; then
+		yell "installing as master/developer ..."
 		create_registry
 	fi
 
 	restore_db
+	create_settings
 	secure_access
 }
 
@@ -272,7 +285,7 @@ remove() {
 
 	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_BASE_PACKAGES"
 
-	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
+	if [ $NEST_CONTAINER_TYPE == "cushion_master" || $NEST_CONTAINER_TYPE == "developer" ]; then
 		yell "removing the registry ..."
 		fly rm -f $NEST_APP_REGISTRY_PATH
 	fi
@@ -305,12 +318,12 @@ info() {
 	do_things after info base
 }
 
-start() {
-	do_things before start base
-	do_things after start base
+up() {
+	do_things before up base
+	do_things after up base
 }
 
-stop() {
+down() {
 	yell "going down ..."
 
 	# this event needs to complete within 1 sec
@@ -318,8 +331,8 @@ stop() {
 	# time consuming jobs should be scheduled for
 	# daily cron or other user submitted jobs
 
-	do_things before stop base
-	do_things after stop base                                                                                                  
+	do_things before down base
+	do_things after down base                                                                                                  
 }
 
 daily() {

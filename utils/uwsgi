@@ -189,5 +189,5 @@ uwsgi_start() {
 }
 
 uwsgi_stop() {
-	sudo kill -SIGTERM `cat /tmp/uwsgi-pid`	
+	sudo kill -SIGKILL `cat /tmp/uwsgi-pid`	
 }

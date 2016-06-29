@@ -6,7 +6,9 @@
 php_init() {
 	yell "-> php init"; 
 	NEST_LANGUAGE=PHP
-	NEST_LANGUAGE_VERSION=5.6.19-r0
+	NEST_LANGUAGE_VERSION=5.6.19-r0	
+	NEST_LANGUAGE_FRAMEWORK=PHP
+	NEST_LANGUAGE_FRAMEWORK_VERSION=5.6.19-r0
 	NEST_LANGUAGE_PACKAGES='[
 		"uwsgi", 
 		"uwsgi-router_uwsgi", 
@@ -164,24 +166,24 @@ php_after_info() {
 	do_things after info php
 }
 
-php_before_start() {
-	do_things before start php
+php_before_up() {
+	do_things before up php
 }                                            
 
-php_after_start() {
-	do_things after start php
+php_after_up() {
+	do_things after up php
 	source $NEST_TWIG_UTILS_FOLDER/uwsgi
-	uwsgi_start
+	uwsgi_up
 }
                                            
-php_before_stop() {
-	do_things before stop php
+php_before_down() {
+	do_things before down php
 	source $NEST_TWIG_UTILS_FOLDER/uwsgi
-	uwsgi_stop
+	uwsgi_down
 }
 
-php_after_stop() {
-	do_things after stop php
+php_after_down() {
+	do_things after down php
 }
 
 php_before_daily() {
