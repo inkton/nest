@@ -137,10 +137,10 @@ create_settings() {
 			yell "remove the existing install using the $NEST_LANGUAGE twig before installing another lanuage type!"
 			exit -1
 		fi
+	fi
 
-	else
-		try touch $NEST_CUSHION_SETTINGS_PATH
-		try echo "NEST_CUSHION_SITE_VERSION=1
+
+	try echo "NEST_CUSHION_SITE_VERSION=1
 NEST_CUSHION_APP=$NEST_APP
 NEST_CUSHION_APP_VERSION=$NEST_APP_VERSION
 NEST_CUSHION_LANGUAGE_FRAMEWORK=$NEST_LANGUAGE_FRAMEWORK
@@ -148,8 +148,6 @@ NEST_CUSHION_LANGUAGE_FRAMEWORK_VERSION=$NEST_LANGUAGE_FRAMEWORK_VERSION
 NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
 NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 " > $NEST_CUSHION_SETTINGS_PATH
-
-	fi
 
 	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
 } 
@@ -224,11 +222,15 @@ create_app_admin() {
 				$NEST_APP_ADMIN 
 
 		try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
-
+		
 		try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
 		try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
 		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
 		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+
+		# the profile is owned by admin and upadated during isntall/remove cycles
+		try touch $NEST_CUSHION_SETTINGS_PATH
+		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_CUSHION_SETTINGS_PATH
 	fi
 }
 
