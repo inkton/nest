@@ -179,7 +179,7 @@ EOL
 	fly rm -f $NEST_FOLDER_PUBLIC/50x.html
 }
 
-uwsgi_start() {
+uwsgi_up() {
 	if [ $NEST_CONTAINER_TYPE == "cushion" ]; then
 		# run in the foregrund in production
 		/usr/sbin/uwsgi --ini $NEST_APP_SETTINGS_PATH
@@ -188,6 +188,6 @@ uwsgi_start() {
 	fi
 }
 
-uwsgi_stop() {
+uwsgi_down() {
 	sudo kill -SIGKILL `cat /tmp/uwsgi-pid`	
 }
