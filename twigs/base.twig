@@ -256,7 +256,7 @@ install() {
 
 	do_things after install base
 
-	if [ $NEST_CONTAINER_TYPE == "cushion_master" || $NEST_CONTAINER_TYPE == "developer" ]; then
+	if [[ $NEST_CONTAINER_TYPE == "cushion_master" || $NEST_CONTAINER_TYPE == "developer" ]]; then
 		yell "installing as master/developer ..."
 		create_registry
 	fi
@@ -287,7 +287,7 @@ remove() {
 
 	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_BASE_PACKAGES"
 
-	if [ $NEST_CONTAINER_TYPE == "cushion_master" || $NEST_CONTAINER_TYPE == "developer" ]; then
+	if [[ $NEST_CONTAINER_TYPE == "cushion_master" || $NEST_CONTAINER_TYPE == "developer" ]]; then
 		yell "removing the registry ..."
 		fly rm -f $NEST_APP_REGISTRY_PATH
 	fi
