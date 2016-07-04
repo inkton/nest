@@ -204,9 +204,6 @@ try cat > $NEST_APP_REGISTRY_PATH <<EOL
 					"name" : "$NEST_APP",
 					"version" : "$NEST_APP_VERSION"
 		}
-  },
-  "debug": {
-    "local_dns": "yes"
   }
 }
 EOL
@@ -226,11 +223,14 @@ create_app_admin() {
 				$NEST_APP_ADMIN 
 
 		try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
-		
-		try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
-		try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
-		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
-		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+	
+		if [ $NEST_CONTAINER_TYPE == "developer" ]; then
+			yell "enabling remote access ..."
+			try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
+			try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
+			try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
+			try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+		fi
 
 		# the profile is owned by admin and upadated during isntall/remove cycles
 		try touch $NEST_CUSHION_SETTINGS_PATH
