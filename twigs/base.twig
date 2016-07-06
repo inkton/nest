@@ -7,7 +7,7 @@ source $NEST_FOLDER/utils/prefix
 
 twig_links_begin() {
 	NEST_BASE_VERSION=1.0
-	NEST_TWIG_RUN_TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
+	NEST_RUN_TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
 	NEST_LANGUAGE=''
 	NEST_LANGUAGE_VERSION=''
 
@@ -275,7 +275,7 @@ daily() {
 	yell "ugrade needed? cushion version $NEST_CUSHION_SITE_VERSION == site ver $NEST_SITE_VERSION ?  ..."		
 	if [ $NEST_CUSHION_SITE_VERSION -ne $NEST_SITE_VERSION ]; then
 		yell "cushion needs an update ..."
-		NEST_OPERATION=update /bin/sh $NEST_APP_TWIG_PATH
+		NEST_OPERATION=update /bin/sh $NEST_APP_PATH
 	fi
 
 	do_things after daily base
