@@ -31,20 +31,17 @@ php_shutdown() {
 	shutdown_before php
 }
 
-php_before_install() {
-	yell "-> php_before_install"; 
-	do_things before install php
+php_before_create() {
+	do_things before create php
 }
 
-php_after_install() { 
-	yell "-> after_php_install";
-	run_cmd "/usr/bin/sudo /sbin/apk --update add" "$NEST_LANGUAGE_PACKAGES"
+php_after_create() {
+	yell "after create php ..."
 
-	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
-		yell "installing as master ..."
+	do_things after create php
 
-		source $NEST_TWIG_UTILS_FOLDER/uwsgi
-		uwsgi_new_install
+	source $NEST_TWIG_UTILS_FOLDER/uwsgi
+	uwsgi_new_install
 
 try echo "
 ;  *****************************
@@ -93,30 +90,44 @@ php-set = upload_max_filesize=$NEST_PHP_UPLOAD_MAX_FILESIZE
 ; default is 2M
 php-set = post_max_size=$NEST_PHP_POST_MAX_SIZE                                                                                     
 " >> "$NEST_APP_SETTINGS_PATH"
-	fi
 
-	yell "->install composer"; 
+}
 
-	if [ -f /usr/local/nest/sbin/composer.phar ]; then
-		try /usr/bin/sudo cp /usr/local/nest/sbin/composer.phar /bin
+php_before_install() {
+	do_things before install php
+
+	yell "install composer ..."; 
+
+	if [ -f /usr/local/nest/sbin/composer ]; then
+		try /usr/bin/sudo cp /usr/local/nest/sbin/composer /bin
 	else
 		try /usr/bin/sudo /usr/bin/php -r "readfile('https://getcomposer.org/installer');" > /tmp/composer-setup.php
 		try /usr/bin/sudo /usr/bin/php /tmp/composer-setup.php --install-dir=/bin --filename=composer
 		try /usr/bin/sudo /usr/bin/php -r "unlink('/tmp/composer-setup.php');"
 	fi
 
+	composer init --no-interaction \
+		--name=$NEST_NAME \
+		--description="here we come" \
+		--working-dir=$NEST_HOME
+}
+
+php_after_install() { 
+	yell "install php packages ..."; 
+
+	run_cmd "/usr/bin/sudo /sbin/apk --update add" "$NEST_LANGUAGE_PACKAGES"
+
 	do_things after install php
 }
 
 php_before_update() {
-	yell "-> before_php_update"; 
 	do_things before update php
 }
 
 php_after_update() { 
-	yell "-> after_php_update"; 
+	yell "update php packages ..."; 
 	run_cmd "/usr/bin/sudo /sbin/apk update" "$NEST_LANGUAGE_PACKAGES"	
-	
+
 	try /usr/bin/sudo /bin/composer self-update
 	try /usr/bin/sudo /bin/composer update
 
@@ -124,23 +135,21 @@ php_after_update() {
 }
 
 php_before_upgrade() {
-	yell "-> before_php_upgrade";   
 	do_things before upgrade php
 } 
 
 php_after_upgrade() { 
-	yell "-> after_php_upgrade"; 
+	yell "upgrade php packages ..."; 
 	run_cmd "/usr/bin/sudo /sbin/apk --update upgrade" "$NEST_LANGUAGE_PACKAGES"
 	do_things after upgrade php
 }
 
 php_before_remove() {
-	yell "-> before_php_remove"; 
 	do_things before remove php
 }
 
 php_after_remove() { 
-	yell "-> after_php_remove"; 
+	yell "remove php packages ..."; 
 	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
 
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
@@ -155,12 +164,11 @@ php_after_remove() {
 }
 
 php_before_info() {
-	yell "-> before_php_info"; 
 	do_things before info php
 }
 
 php_after_info() { 
-	yell "-> after_php_info"; 
+	yell "php info ..."; 
 	run_cmd "/usr/bin/sudo /sbin/apk version" "$NEST_LANGUAGE_PACKAGES"
 	run_cmd "/usr/bin/sudo /sbin/apk audit" "$NEST_LANGUAGE_PACKAGES"
 	do_things after info php
@@ -193,3 +201,4 @@ php_before_daily() {
 php_after_daily() {
 	do_things after daily php
 }
+

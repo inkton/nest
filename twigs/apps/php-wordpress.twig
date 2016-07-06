@@ -5,9 +5,10 @@
 
 wordpress_init() {
 	yell "-> wordpress init"; 
-	
-	NEST_APP=wordpress
-	NEST_APP_VERSION=<?>
+
+	NEST_APP="wordpress"
+	NEST_APP_VERSION=""
+	NEST_APP_PACKAGES='[]'
 
 	init_after wordpress
 }
@@ -16,13 +17,30 @@ wordpress_shutdown() {
 	shutdown_before wordpress
 }
 
+wordpress_before_create() {
+	do_things before install wordpress
+}
+
+wordpress_after_create() { 
+	do_things after install wordpress
+}
+
 wordpress_before_install() {
-	yell "-> wordpress_before_install"; 
 	do_things before install wordpress
 }
 
 wordpress_after_install() { 
-	yell "-> after_wordpress_install";
+	yell "-> install wp-cli";
+
+	if [ -f /usr/local/nest/sbin/wp ]; then
+		try /usr/bin/sudo cp /usr/local/nest/sbin/wp /bin
+	else
+		try cd /bin
+		try /usr/bin/sudo curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+		try /usr/bin/sudo chmod +x wp-cli.phar
+		try /usr/bin/sudo mv wp-cli.phar wp
+	fi
+
 	do_things after install wordpress
 }
 
@@ -32,8 +50,12 @@ wordpress_before_update() {
 }
 
 wordpress_after_update() { 
-	yell "-> after_wordpress_update"; 
-	run_cmd "/usr/bin/sudo /sbin/apk --progress update" "$NEST_LANGUAGE_PACKAGES"
+	yell "-> after_wordpress_update";
+
+	run_cmd "/usr/bin/sudo /sbin/apk --progress update" "$NEST_APP_PACKAGES"
+
+	try /bin/wp cli update --yes
+
 	do_things after update wordpress
 }
 
@@ -44,27 +66,27 @@ wordpress_before_upgrade() {
 
 wordpress_after_upgrade() { 
 	yell "-> after_wordpress_upgrade"; 
-	run_cmd "/usr/bin/sudo /sbin/apk --progress --update upgrade" "$NEST_LANGUAGE_PACKAGES"
+	run_cmd "/usr/bin/sudo /sbin/apk --progress --update upgrade" "$NEST_APP_PACKAGES"
 	do_things after upgrade wordpress
 }
 
 wordpress_before_remove() {
-	yell "-> before_wordpress_remove"; 
 	do_things before remove wordpress
 }
 
 wordpress_after_remove() { 
-	yell "-> after_wordpress_remove";
 	do_things after remove wordpress
 }
 
 wordpress_before_info() {
-	yell "-> before_wordpress_info"; 
 	do_things before info wordpress
 }
 
 wordpress_after_info() { 
-	yell "-> after_wordpress_info"; 
+	yell "-> after_wordpress_info";
+
+	try wp --info
+
 	do_things after info wordpress
 }
 

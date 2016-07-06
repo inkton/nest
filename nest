@@ -1,0 +1,133 @@
+#!/bin/sh
+# ------------------------------------------------------
+#	Base Twig
+#	(c) 2016 Inkton
+#
+#	the data model
+#		forest [1 .. n]
+#			tree [1 .. n]
+#				nest [1 .. n]
+#					cushion [1 .. n]
+#						twig [1 .. n]
+#
+#
+
+set -xv
+
+source $NEST_FOLDER/utils/prefix
+
+nest() {
+	if [ -z "$NEST_OPERATION" ]; then
+		# default operation is create
+		NEST_OPERATION=create
+	fi
+	eval $NEST_OPERATION
+}
+
+secure_access() {
+	yell "securing access to the public area"
+
+	try /usr/bin/sudo /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+	try /usr/bin/sudo /bin/chown -R $NEST_APP_USER_UID:$NEST_APP_GROUP $NEST_FOLDER_PUBLIC
+
+	# Change directory permissions rwxr-xr-x
+	try find $NEST_FOLDER_PUBLIC -type d -exec /usr/bin/sudo /bin/chmod 775 {} \;
+	# Change file permissions rw-r--r--
+	try find $NEST_FOLDER_PUBLIC -type f -exec /usr/bin/sudo /bin/chmod 644 {} \;  
+}
+
+create() {
+
+	# -------------------------------------
+	#
+	# The pre-reqs for creation
+	#
+	#	1 - logged in as root
+	#	2 - users admin and webuser exist
+	#	3 - a db and schema create script 
+	#	4 - the app folders
+	#	5 - the app registry
+	#	6 - clear of prev install
+	#
+
+	yell "Confirming app pre-requisits ..."
+	yell "-> The folder structure"
+
+	try mkdir -p /var/app/{admin/jobs,app/{backups,db,log,public/{upload,download}}}
+	try cd $NEST_HOME
+
+	yell "-> The app registry"
+
+	if [ ! -f $NEST_APP_REGISTRY_PATH ]; then
+		die "The app rejistry $NEST_APP_REGISTRY_PATH must exist"
+	fi
+
+	NEST_CUSHION_APP=($(jq -r '.installed.application.name' $NEST_APP_REGISTRY_PATH))
+	NEST_CUSHION_APP_VERSION=($(jq -r '.installed.application.version' $NEST_APP_REGISTRY_PATH))
+	NEST_CUSHION_LANGUAGE_FRAMEWORK=($(jq -r '.installed.framework.name' $NEST_APP_REGISTRY_PATH))
+	NEST_CUSHION_LANGUAGE_FRAMEWORK_VERSION=($(jq -r '.installed.framework.version' $NEST_APP_REGISTRY_PATH))
+	NEST_CUSHION_LANGUAGE=($(jq -r '.installed.language.name' $NEST_APP_REGISTRY_PATH))
+	NEST_CUSHION_LANGUAGE_VERSION=($(jq -r '.installed.language.version' $NEST_APP_REGISTRY_PATH))
+
+	if [[ 	! -z "$NEST_CUSHION_APP" ||
+			! -z "$NEST_CUSHION_APP_VERSION" ||
+			! -z "$NEST_CUSHION_LANGUAGE_FRAMEWORK" ||
+			! -z "$NEST_CUSHION_LANGUAGE_FRAMEWORK_VERSION" ||
+			! -z "$NEST_CUSHION_LANGUAGE" ||
+			! -z "$NEST_CUSHION_LANGUAGE_VERSION"
+		]];then
+		die "Remove the existing application first"
+	fi
+
+	try cp "$NEST_FOLDER/cushions/$NEST_USE_CUSHION.cushion" "$NEST_HOME/app.nest"
+	try NEST_OPERATION=create "$NEST_HOME/app.nest"
+
+	secure_access
+}
+
+destroy() {
+	NEST_OPERATION=remove "$NEST_HOME/app.nest"
+	NEST_OPERATION=destroy "$NEST_HOME/app.nest"
+	rm -rf "$NEST_HOME/app.nest"
+}
+
+change_db_password() {
+	yell "backup db"
+
+	try source $NEST_TWIG_UTILS_FOLDER/db
+
+	db_change_password
+}
+
+backup_db() {
+	yell "backup db"
+
+	try source $NEST_TWIG_UTILS_FOLDER/db 
+
+	db_backup_schema
+	db_backup_data
+}
+
+restore_db() {
+	yell "restore schema"
+
+	try source $NEST_TWIG_UTILS_FOLDER/db
+
+	db_restore_schema
+	db_restore_data	
+}
+
+daily() {
+	yell "-> daily"; 
+	# called anytime between 0-1 HRS UTC
+
+	if [[ $(date +%u) -eq 1 ]] ; then
+		yell "-> do weekly tasks "
+	fi
+
+	if [[ $(date +%d) -eq 1  ]]; then
+		yell "-> do monthly tasks " 
+	fi
+}
+
+nest

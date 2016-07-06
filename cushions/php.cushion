@@ -8,17 +8,20 @@
 . $NEST_FOLDER/twigs/frameworks/php-5.6.twig
 
 app_init() {
+	yell "my-php-app init ..."
+
+	NEST_APP="my-php-app"
+	NEST_APP_VERSION="1.0"
+	NEST_APP_PACKAGES='[]'
 }
 
 app_shutdown() {
-	yell "<- app shutdown  ->"
+	yell "my-php-app shutdown ..."
 }
 
 app_before_install() {
-	yell "-> app_before_install"; 
+	yell "my-php-app install ..."; 
 
-	NEST_DB_PASSWORD=9999
-	
 	NEST_MAX_LOG_SIZE=1048576
 	NEST_PHP_TIMEZONE="US/Central"
 	NEST_PHP_FILE_UPLOAD=20
@@ -28,36 +31,14 @@ app_before_install() {
 }
 
 app_before_upgrade() {
-	yell "-> app_before_upgrade"; 
+	yell "my-php-app upgrade ..."; 
 } 
 
 app_before_start() {
-	yell "-> app_before_start"; 
-}
-
-app_before_daily() {
-	yell "-> app_before_daily"; 
-	
-	# called anytime between 0-1 HRS UTC
-
-	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
-
-		# running aginst the master ensures
-		# the job is only run once. 
-		
-		if [[ $(date +%u) -eq 1 ]] ; then
-			yell "-> do weekly tasks "; 
-		fi
-		
-		if [[ $(date +%d) -eq 1  ]]; then
-			yell "-> do monthly tasks "; 
-		fi
-
-	fi
+	yell "my-php-app before start ..."; 
 }
 
 twig_links_begin
 	link_twigs base php
 	link_twigs php app
 twig_links_end
-

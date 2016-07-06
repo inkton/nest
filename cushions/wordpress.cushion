@@ -1,0 +1,42 @@
+#!/bin/sh
+# ------------------------------------------------------
+#	PHP App Twig Template
+#	(c) 2016 Inkton
+#
+
+. $NEST_FOLDER/twigs/base.twig
+. $NEST_FOLDER/twigs/frameworks/php-5.6.twig
+. $NEST_FOLDER/twigs/apps/php-wordpress.twig
+
+app_init() {
+	yell "-> app init"
+}
+
+app_shutdown() {
+	yell "-> app shutdown"
+}
+
+app_before_install() {
+	yell "-> cushion_before_install"
+
+	NEST_MAX_LOG_SIZE=1048576
+	NEST_PHP_TIMEZONE="US/Central"
+	NEST_PHP_FILE_UPLOAD=20
+	NEST_PHP_UPLOAD_MAX_FILESIZE=2M
+	NEST_PHP_POST_MAX_SIZE=2M
+	NEST_PHP_MAX_EXECUTION_TIME=180	
+}
+
+app_before_upgrade() {
+	yell "-> app upgrade"
+} 
+
+app_before_up() {
+	yell "-> app up"
+}
+
+twig_links_begin
+	link_twigs base php
+	link_twigs php wordpress
+	link_twigs wordpress app
+twig_links_end

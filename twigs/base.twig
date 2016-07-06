@@ -2,22 +2,6 @@
 #	Base Twig
 #	(c) 2016 Inkton
 #
-#	the data model
-#		forest [1 .. n]
-#			tree [1 .. n]
-#				nest [1 .. n]
-#					cushion [1 .. n]
-#						twig [1 .. n]
-#
-#	stages of cushion creation
-#
-#	stage 1 - create docker
-#			base packages sudo jq openssl ca-certificates installed 
-#			user group created
-#	stage 2 - init platform
-#			create app admin
-#			create log folder
-#
 
 source $NEST_FOLDER/utils/prefix
 
@@ -45,8 +29,6 @@ twig_links_begin() {
 }
 
 link_twigs() {
-	yell linking twigs "$1 and $2 ..." 
-
 	local to_init=twig_init_"$1"
 	local to_init_func="$2"_init
 
@@ -64,10 +46,10 @@ link_twigs() {
 	else
 		eval "$to_shutdown=null_callback"
 	fi
-	
+
 	local to_assign_b=twig_"$1"_before_"$NEST_OPERATION"
 	local to_func_b="$2"_before_"$NEST_OPERATION"
-	
+
 	if function_exists "$to_func_b"; then
 		eval "$to_assign_b='$to_func_b'"
 	else
@@ -119,17 +101,16 @@ twig_links_end()  {
 	base_shutdown
 }
 
-create_log() {
-        if [ -f "$NEST_CUSHION_LOG_PATH" ]; then
-                > $NEST_CUSHION_LOG_PATH
-        else
-                try /bin/touch $NEST_CUSHION_LOG_PATH
-                try /bin/chmod -R a+w $NEST_CUSHION_LOG_PATH
-        fi
+setup_log() {
+	if [ -f "$NEST_CUSHION_LOG_PATH" ]; then
+		> $NEST_CUSHION_LOG_PATH
+	else
+		try /bin/touch $NEST_CUSHION_LOG_PATH
+		try /bin/chmod -R a+w $NEST_CUSHION_LOG_PATH
+	fi
 }
 
-create_settings() {
-
+register_install() {
 	if [ -f "$NEST_CUSHION_SETTINGS_PATH" ]; then
 		try source $NEST_CUSHION_SETTINGS_PATH
 		
@@ -138,7 +119,6 @@ create_settings() {
 			exit -1
 		fi
 	fi
-
 
 	try echo "NEST_CUSHION_SITE_VERSION=1
 NEST_CUSHION_APP=$NEST_APP
@@ -152,141 +132,95 @@ NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
 } 
 
-secure_access() {
-	yell "securing access to the public area"
+create() {
+	yell "create app ..."
+	do_things before create base
 
-	try /usr/bin/sudo /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
-	try /usr/bin/sudo /bin/chown -R $NEST_APP_USER_UID:$NEST_APP_GROUP $NEST_FOLDER_PUBLIC
+	try cp "$NEST_FOLDER/conf/mime.types" "$NEST_APP_MIME_PATH"
+	try cd $NEST_HOME
 
-	# Change directory permissions rwxr-xr-x
-	try find $NEST_FOLDER_PUBLIC -type d -exec /usr/bin/sudo /bin/chmod 775 {} \;
-	# Change file permissions rw-r--r--
-	try find $NEST_FOLDER_PUBLIC -type f -exec /usr/bin/sudo /bin/chmod 644 {} \;  
-}
- 
-create_registry() {
-	yell "creating a new app registry"
-try cat > $NEST_APP_REGISTRY_PATH <<EOL
-{
-  "site": {
-    "home": "$NEST_SITE_HOME",
-    "email": "$NEST_SITE_EMAIL",
-    "description": "-",
-    "organization": "$NEST_SITE_ORG",
-    "version": 1,
-    "domains": []
-  },
-  "location": {
-    "id": "$NEST_ID",
-    "name": "$NEST_NAME",
-    "tree": "$NEST_LOCATION_TREE",
-    "forest": "$NEST_LOCATION_FOREST"
-  },
-  "database": {
-    "vendor": "$NEST_DB_VENDOR",
-    "name": "$NEST_DB_NAME",
-    "user": "$NEST_DB_USER",
-    "password": "$NEST_DB_PASSWORD",
-    "hostname": "$NEST_DB_HOST_NAME",
-    "charset": "utf8",
-    "collate": "utf8_general_ci"
-  },
-  "installed":  {
-		"language": {
-					"name" : "$NEST_LANGUAGE",
-					"version" : "$NEST_LANGUAGE_VERSION"
-		},
-		"framework": {
-					"name" : "$NEST_LANGUAGE_FRAMEWORK",
-					"version" : "$NEST_LANGUAGE_FRAMEWORK_VERSION"
-		},
-		"application": {
-					"name" : "$NEST_APP",
-					"version" : "$NEST_APP_VERSION"
-		}
-  }
-}
-EOL
+	git init
+	git config user.email $NEST_SITE_EMAIL
+	git config user.name $NEST_APP_ADMIN
+	git config core.autocrlf false
+	git config push.default simple
+
+	try cat NEST_APP_REGISTRY_PATH | \
+		jq '.installed.application.name="$NEST_APP"' | \
+		jq '.installed.application.version="$NEST_APP_VERSION"' | \
+		jq '.installed.framework.name="$NEST_LANGUAGE_FRAMEWORK"' | \
+		jq '.installed.framework.version="$NEST_LANGUAGE_FRAMEWORK_VERSION"' | \
+		jq '.installed.language.name="$NEST_LANGUAGE"' | \
+		jq '.installed.language.version="$NEST_LANGUAGE_VERSION"' | \
+		> NEST_APP_REGISTRY_PATH.new
+
+	try mv NEST_APP_REGISTRY_PATH.new NEST_APP_REGISTRY_PATH
+
+	do_things afer create base
+
+	restore_db
 }
 
-create_app_admin() {
-	ret=false
-	getent passwd $NEST_NAME >/dev/null 2>&1 && ret=true
+destroy() {
+	yell "destroy app ..."
+	do_things before destroy base
 
-	if $ret; then
-		yell "user $NEST_NAME already exist"
-	else
-		try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID \
-				-G $NEST_APP_GROUP \
-				-s /bin/sh \
-				-h "/home/$NEST_APP_ADMIN" \
-				$NEST_APP_ADMIN 
+	try cat NEST_APP_REGISTRY_PATH | \
+		jq '.installed.application.name=""' | \
+		jq '.installed.application.version=""' | \
+		jq '.installed.framework.name=""' | \
+		jq '.installed.framework.version=""' | \
+		jq '.installed.language.name=""' | \
+		jq '.installed.language.version=""' | \
+		> NEST_APP_REGISTRY_PATH.new
 
-		try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
-	
-		if [ $NEST_CONTAINER_TYPE == "developer" ]; then
-			yell "enabling remote access ..."
-			try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
-			try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
-			try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
-			try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
-		fi
+	try mv NEST_APP_REGISTRY_PATH.new NEST_APP_REGISTRY_PATH
 
-		# the profile is owned by admin and upadated during isntall/remove cycles
-		try touch $NEST_CUSHION_SETTINGS_PATH
-		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_CUSHION_SETTINGS_PATH
-	fi
-}
-
-initialise_cushion() {
-	# ----------------
-	#  stage 2 create
-	# ----------------
-		
-	create_log
-	create_app_admin
-}
-
-destroy_cushion() {
-	rm -f $$NEST_CUSHION_LOG_PATH
-	rm -f $NEST_CUSHION_SETTINGS_PATH
-	deluser --remove-home $NEST_APP_ADMIN
+	do_things after destroy base
 }
 
 install() {
+	yell "install app in cushion ..."
 	do_things before install base
+
+	try touch $NEST_CUSHION_SETTINGS_PATH
+	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_CUSHION_SETTINGS_PATH
 
 	run_cmd "/usr/bin/sudo /sbin/apk --update add" "$NEST_BASE_PACKAGES"
 
 	do_things after install base
 
-	if [[ $NEST_CONTAINER_TYPE == "cushion_master" || $NEST_CONTAINER_TYPE == "developer" ]]; then
-		yell "installing as master/developer ..."
-		create_registry
-	fi
-
-	restore_db
-	create_settings
+	register_install
+	setup_log
 	secure_access
 }
 
 update() {
+	yell "update app in cushion ..."
 	do_things before update base
+
 	run_cmd "/usr/bin/sudo /sbin/apk update" "$NEST_BASE_PACKAGES"
 	run_cmd "/usr/bin/sudo /sbin/apk cache -v sync"
+
 	do_things after update base
+
 	secure_access
 }
 
 upgrade() {
+	yell "upgrade app in cushion ..."
 	do_things before upgrade base
+
 	run_cmd "/usr/bin/sudo /sbin/apk --update upgrade" "$NEST_BASE_PACKAGES"
 	run_cmd "/usr/bin/sudo /sbin/apk cache -v sync"
+
 	do_things after upgrade base
+
 	secure_access
 }
 
 remove() {
+	yell "remove app from cushion ..."
 	do_things before remove base
 
 	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_BASE_PACKAGES"
@@ -296,36 +230,32 @@ remove() {
 		fly rm -f $NEST_APP_REGISTRY_PATH
 	fi
 
-	fly rm -f $NEST_CUSHION_SETTINGS_PATH
-
 	do_things after remove base
+
+	rm -f $NEST_CUSHION_SETTINGS_PATH
+	rm -f $NEST_CUSHION_LOG_PATH
+
 	secure_access
 }
   
 info() {
+	yell "base info of cushion ..."
 	do_things before info base
 
-	yell "*** begin package stats **** "
 	try /usr/bin/sudo /sbin/apk stats
-	yell "*** end package stats **** "
-
-	yell "*** begin package info **** "
 	fly /usr/bin/sudo /sbin/apk -vv info|sort
 
 	run_cmd "/usr/bin/sudo /sbin/apk version" "$NEST_BASE_PACKAGES"
 	run_cmd "/usr/bin/sudo /sbin/apk audit" "$NEST_BASE_PACKAGES"
 
-	yell "*** end package info **** "
-
-	yell "*** begin app settings **** "
 	cat $NEST_APP_SETTINGS_PATH
-	yell "*** end app settings **** "
 
 	do_things after info base
 }
 
 up() {
 	do_things before up base
+
 	do_things after up base
 }
 
@@ -343,7 +273,7 @@ down() {
 
 daily() {
 	do_things before daily base
-	
+
 	NEST_SITE_VERSION=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.site.version')
 	try source $NEST_CUSHION_SETTINGS_PATH
 
@@ -352,29 +282,8 @@ daily() {
 		yell "cushion needs an update ..."
 		NEST_OPERATION=update /bin/sh $NEST_APP_TWIG_PATH
 	fi
-	
+
 	do_things after daily base
+
 	secure_access
-}
-
-change_db_password() {
-	yell "backup db"
-	try source $NEST_TWIG_UTILS_FOLDER/db 
-	db_change_password
-}
-
-backup_db() {
-	yell "backup db"
-	try source $NEST_TWIG_UTILS_FOLDER/db 
-	
-	db_backup_schema
-	db_backup_data
-}
-
-restore_db() {
-	yell "restore schema"
-	try source $NEST_TWIG_UTILS_FOLDER/db
-	
-	db_restore_schema
-	db_restore_data	
 }
