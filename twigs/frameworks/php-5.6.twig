@@ -40,7 +40,7 @@ php_after_create() {
 
 	do_things after create php
 
-	source $NEST_TWIG_UTILS_FOLDER/uwsgi
+	source $NEST_FOLDER/utils/uwsgi
 	uwsgi_new_install
 
 try echo "
@@ -153,7 +153,7 @@ php_after_remove() {
 	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
 
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
-		source $NEST_TWIG_UTILS_FOLDER/uwsgi
+		source $NEST_FOLDER/utils/uwsgi
 		uwsgi_remove_install
 	fi
 
@@ -180,13 +180,13 @@ php_before_up() {
 
 php_after_up() {
 	do_things after up php
-	source $NEST_TWIG_UTILS_FOLDER/uwsgi
+	source $NEST_FOLDER/utils/uwsgi
 	uwsgi_up
 }
                                            
 php_before_down() {
 	do_things before down php
-	source $NEST_TWIG_UTILS_FOLDER/uwsgi
+	source $NEST_FOLDER/utils/uwsgi
 	uwsgi_down
 }
 
