@@ -82,7 +82,7 @@ php-set = max_execution_time=$NEST_PHP_MAX_EXECUTION_TIME
 ; default is On
 php-set = file_uploads=On
 ; temp dir                                                                                                                            
-php-set = upload_tmp_dir=$NEST_FOLDER_TRANSFERS
+php-set = upload_tmp_dir=$NEST_FOLDER_UPLOAD
 ; default is 20
 php-set = max-file-upload=$NEST_PHP_FILE_UPLOAD
 ; default is 2M
@@ -95,6 +95,12 @@ php-set = post_max_size=$NEST_PHP_POST_MAX_SIZE
 
 php_before_install() {
 	do_things before install php
+}
+
+php_after_install() { 
+	yell "install php packages ..."; 
+
+	run_cmd "/usr/bin/sudo /sbin/apk --update add" "$NEST_LANGUAGE_PACKAGES"
 
 	yell "install composer ..."; 
 
@@ -110,12 +116,6 @@ php_before_install() {
 		--name=$NEST_NAME \
 		--description="here we come" \
 		--working-dir=$NEST_HOME
-}
-
-php_after_install() { 
-	yell "install php packages ..."; 
-
-	run_cmd "/usr/bin/sudo /sbin/apk --update add" "$NEST_LANGUAGE_PACKAGES"
 
 	do_things after install php
 }

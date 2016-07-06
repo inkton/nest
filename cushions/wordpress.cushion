@@ -16,7 +16,7 @@ app_shutdown() {
 	yell "-> app shutdown"
 }
 
-app_before_install() {
+app_before_create() {
 	yell "-> cushion_before_install"
 
 	NEST_MAX_LOG_SIZE=1048576

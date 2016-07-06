@@ -3,6 +3,7 @@
 #	PHP App Twig Template
 #	(c) 2016 Inkton
 #
+set -xv
 
 . $NEST_FOLDER/twigs/base.twig
 . $NEST_FOLDER/twigs/frameworks/php-5.6.twig
@@ -19,7 +20,7 @@ app_shutdown() {
 	yell "my-php-app shutdown ..."
 }
 
-app_before_install() {
+app_before_create() {
 	yell "my-php-app install ..."; 
 
 	NEST_MAX_LOG_SIZE=1048576

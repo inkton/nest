@@ -96,23 +96,33 @@ twig_links_end()  {
 	base_shutdown
 }
 
-setup_log() {
-	if [ -f "$NEST_CUSHION_LOG_PATH" ]; then
-		> $NEST_CUSHION_LOG_PATH
-	else
-		try /bin/touch $NEST_CUSHION_LOG_PATH
-		try /bin/chmod -R a+w $NEST_CUSHION_LOG_PATH
-	fi
+init_cushion() {
+	try touch $NEST_CUSHION_SETTINGS_PATH
+	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_CUSHION_SETTINGS_PATH
+	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
+
+	try touch $NEST_CUSHION_LOG_PATH
+	try /bin/chmod +x $NEST_CUSHION_LOG_PATH
+}
+
+secure_access() {
+	yell "securing access to the public area"
+
+	try /usr/bin/sudo /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
+	try /usr/bin/sudo /bin/chown -R $NEST_APP_USER_UID:$NEST_APP_GROUP $NEST_FOLDER_PUBLIC
+
+	# Change directory permissions rwxr-xr-x
+	try find $NEST_FOLDER_PUBLIC -type d -exec /usr/bin/sudo /bin/chmod 775 {} \;
+	# Change file permissions rw-r--r--
+	try find $NEST_FOLDER_PUBLIC -type f -exec /usr/bin/sudo /bin/chmod 644 {} \;  
 }
 
 register_install() {
-	if [ -f "$NEST_CUSHION_SETTINGS_PATH" ]; then
-		try source $NEST_CUSHION_SETTINGS_PATH
-		
-		if [ $NEST_CUSHION_LANGUAGE != $NEST_LANGUAGE ]; then
-			yell "remove the existing install using the $NEST_LANGUAGE twig before installing another lanuage type!"
-			exit -1
-		fi
+	try source $NEST_CUSHION_SETTINGS_PATH
+	
+	if [ $NEST_CUSHION_LANGUAGE != $NEST_LANGUAGE ]; then
+		yell "remove the existing install using the $NEST_LANGUAGE twig before installing another lanuage type!"
+		exit -1
 	fi
 
 	try echo "NEST_CUSHION_SITE_VERSION=1
@@ -124,52 +134,47 @@ NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
 NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 " > $NEST_CUSHION_SETTINGS_PATH
 
-	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
 } 
 
 create() {
 	yell "create app ..."
+	
+	init_cushion
+
 	do_things before create base
 
 	try cp "$NEST_FOLDER/conf/mime.types" "$NEST_APP_MIME_PATH"
 	try cd $NEST_HOME
 
-	git init
-	git config user.email $NEST_SITE_EMAIL
-	git config user.name $NEST_APP_ADMIN
-	git config core.autocrlf false
-	git config push.default simple
+	try cat $NEST_APP_REGISTRY_PATH | \
+		jq '.installed.application.name="'"$NEST_APP"'" ' | \
+		jq '.installed.application.version="'"$NEST_APP_VERSION"'" ' | \
+		jq '.installed.framework.name="'"$NEST_LANGUAGE_FRAMEWORK"'" ' | \
+		jq '.installed.framework.version="'"$NEST_LANGUAGE_FRAMEWORK_VERSION"'" ' | \
+		jq '.installed.language.name="'"$NEST_LANGUAGE"'" ' | \
+		jq '.installed.language.version="'"$NEST_LANGUAGE_VERSION"'" ' \
+		> $NEST_APP_REGISTRY_PATH.new
 
-	try cat NEST_APP_REGISTRY_PATH | \
-		jq '.installed.application.name="$NEST_APP"' | \
-		jq '.installed.application.version="$NEST_APP_VERSION"' | \
-		jq '.installed.framework.name="$NEST_LANGUAGE_FRAMEWORK"' | \
-		jq '.installed.framework.version="$NEST_LANGUAGE_FRAMEWORK_VERSION"' | \
-		jq '.installed.language.name="$NEST_LANGUAGE"' | \
-		jq '.installed.language.version="$NEST_LANGUAGE_VERSION"' | \
-		> NEST_APP_REGISTRY_PATH.new
+	try mv $NEST_APP_REGISTRY_PATH.new $NEST_APP_REGISTRY_PATH
 
-	try mv NEST_APP_REGISTRY_PATH.new NEST_APP_REGISTRY_PATH
-
-	do_things afer create base
-
-	restore_db
+	do_things after create base
+	
 }
 
 destroy() {
 	yell "destroy app ..."
 	do_things before destroy base
 
-	try cat NEST_APP_REGISTRY_PATH | \
-		jq '.installed.application.name=""' | \
-		jq '.installed.application.version=""' | \
-		jq '.installed.framework.name=""' | \
-		jq '.installed.framework.version=""' | \
-		jq '.installed.language.name=""' | \
-		jq '.installed.language.version=""' | \
-		> NEST_APP_REGISTRY_PATH.new
+	try cat $NEST_APP_REGISTRY_PATH | \
+		jq '.installed.application.name="'""'" ' | \
+		jq '.installed.application.version="'""'" ' | \
+		jq '.installed.framework.name="'""'" ' | \
+		jq '.installed.framework.version="'""'" ' | \
+		jq '.installed.language.name="'""'" ' | \
+		jq '.installed.language.version="'""'" ' \
+		> $NEST_APP_REGISTRY_PATH.new
 
-	try mv NEST_APP_REGISTRY_PATH.new NEST_APP_REGISTRY_PATH
+	try mv $NEST_APP_REGISTRY_PATH.new $NEST_APP_REGISTRY_PATH
 
 	do_things after destroy base
 }
@@ -178,15 +183,12 @@ install() {
 	yell "install app in cushion ..."
 	do_things before install base
 
-	try touch $NEST_CUSHION_SETTINGS_PATH
-	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_CUSHION_SETTINGS_PATH
-
 	run_cmd "/usr/bin/sudo /sbin/apk --update add" "$NEST_BASE_PACKAGES"
 
 	do_things after install base
 
 	register_install
-	setup_log
+	restore_db
 	secure_access
 }
 
@@ -266,8 +268,45 @@ down() {
 	do_things after down base                                                                                                  
 }
 
+change_db_password() {
+	yell "backup db"
+
+	try source $NEST_FOLDER/utils/db
+
+	db_change_password
+}
+
+backup_db() {
+	yell "backup db"
+
+	try source $NEST_FOLDER/utils/db 
+
+	db_backup_schema
+	db_backup_data
+}
+
+restore_db() {
+	yell "restore schema"
+
+	try source $NEST_FOLDER/utils/db
+
+	db_restore_schema
+	db_restore_data	
+}
+
 daily() {
+	yell "cron daily tasks ...";
+	# called anytime between 0-1 HRS UTC
+	
 	do_things before daily base
+
+	if [[ $(date +%u) -eq 1 ]] ; then
+		yell "-> do weekly tasks "
+	fi
+
+	if [[ $(date +%d) -eq 1  ]]; then
+		yell "-> do monthly tasks " 
+	fi
 
 	NEST_SITE_VERSION=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.site.version')
 	try source $NEST_CUSHION_SETTINGS_PATH
