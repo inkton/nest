@@ -96,15 +96,6 @@ twig_links_end()  {
 	base_shutdown
 }
 
-init_cushion() {
-	try touch $NEST_CUSHION_SETTINGS_PATH
-	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_CUSHION_SETTINGS_PATH
-	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
-
-	try touch $NEST_CUSHION_LOG_PATH
-	try /bin/chmod +x $NEST_CUSHION_LOG_PATH
-}
-
 secure_access() {
 	yell "securing access to the public area"
 
@@ -137,10 +128,7 @@ NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 } 
 
 create() {
-	yell "create app ..."
-	
-	init_cushion
-
+	yell "create app (run as root) .."	
 	do_things before create base
 
 	try cp "$NEST_FOLDER/conf/mime.types" "$NEST_APP_MIME_PATH"
@@ -158,7 +146,20 @@ create() {
 	try mv $NEST_APP_REGISTRY_PATH.new $NEST_APP_REGISTRY_PATH
 
 	do_things after create base
+}
+
+prepare() {
+	yell "prepare app (run as root) .."
+	do_things before prepare base
 	
+	try touch $NEST_CUSHION_SETTINGS_PATH
+	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_CUSHION_SETTINGS_PATH
+	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
+
+	try touch $NEST_CUSHION_LOG_PATH
+	try /bin/chmod +x $NEST_CUSHION_LOG_PATH
+
+	do_things after prepare base
 }
 
 destroy() {
@@ -221,11 +222,6 @@ remove() {
 	do_things before remove base
 
 	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_BASE_PACKAGES"
-
-	if [[ $NEST_CONTAINER_TYPE == "cushion_master" || $NEST_CONTAINER_TYPE == "developer" ]]; then
-		yell "removing the registry ..."
-		fly rm -f $NEST_APP_REGISTRY_PATH
-	fi
 
 	do_things after remove base
 

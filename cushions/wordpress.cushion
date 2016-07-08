@@ -3,21 +3,22 @@
 #	PHP App Twig Template
 #	(c) 2016 Inkton
 #
+set -xv
 
 . $NEST_FOLDER/twigs/base.twig
 . $NEST_FOLDER/twigs/frameworks/php-5.6.twig
 . $NEST_FOLDER/twigs/apps/php-wordpress.twig
 
 app_init() {
-	yell "-> app init"
+	yell "app init ..."
 }
 
 app_shutdown() {
-	yell "-> app shutdown"
+	yell "app shutdown ..."
 }
 
 app_before_create() {
-	yell "-> cushion_before_install"
+	yell "app create ..."
 
 	NEST_MAX_LOG_SIZE=1048576
 	NEST_PHP_TIMEZONE="US/Central"
@@ -27,12 +28,28 @@ app_before_create() {
 	NEST_PHP_MAX_EXECUTION_TIME=180	
 }
 
+app_before_install() {
+	yell "app install (before) ..."
+
+	NEST_WP_FS_METHOD="direct"
+	NEST_WP_POST_REVISIONS=6
+}
+
+app_after_install() {
+	yell "app install customize ..."
+
+	# refer here http://wp-cli.org/
+	# for the wp-cli reference
+
+	# e.g. try sudo wp plugin install --path=/var/app/public rest-api --activate
+}
+
 app_before_upgrade() {
-	yell "-> app upgrade"
+	yell "app upgrade ..." 
 } 
 
-app_before_up() {
-	yell "-> app up"
+app_before_start() {
+	yell "app before start ..."
 }
 
 twig_links_begin

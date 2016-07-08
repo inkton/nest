@@ -10,7 +10,7 @@ php_init() {
 	NEST_LANGUAGE_FRAMEWORK=PHP
 	NEST_LANGUAGE_FRAMEWORK_VERSION=5.6.19-r0
 	NEST_LANGUAGE_PACKAGES='[
-		"uwsgi", 
+		"uwsgi",
 		"uwsgi-router_uwsgi", 
 		"uwsgi-php", 
 		"php-embed", 
@@ -20,6 +20,7 @@ php_init() {
 		"php-openssl", 
 		"php-phar",
 		"php-json",
+		"php-zlib",
 		"php-mysql",
 		"php-pgsql"
 		]'
@@ -149,16 +150,17 @@ php_before_remove() {
 }
 
 php_after_remove() { 
-	yell "remove php packages ..."; 
+	yell "remove php packages ...";
+
+	try /usr/bin/sudo composer global remove phpunit/phpunit
+	try /usr/bin/sudo /bin/rm -rf /bin/composer
+
 	run_cmd "/usr/bin/sudo /sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
 
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		source $NEST_FOLDER/utils/uwsgi
 		uwsgi_remove_install
 	fi
-
-	try /usr/bin/sudo composer global remove phpunit/phpunit
-	try /usr/bin/sudo /bin/rm -rf /bin/composer
 
 	do_things after remove php
 }

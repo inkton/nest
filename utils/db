@@ -60,4 +60,13 @@ db_restore_data() {
 		try pg_restore --clean --ignore-version --host $DB_HOSTNAME --password $DB_PASSWORD --username $DB_USER --dbname $DB_NAME --verbose < $NEST_APP_DB_DATA_PATH
 	fi
 }
+ 
+db_open_terminal() {
+	db_init
 
+	if [ "$NEST_DB_VENDOR" = mysql ]; then
+		mysql -u $DB_USER -p$DB_PASSWORD -h $DB_HOSTNAME $DB_NAME
+	elif [ "$NEST_DB_VENDOR" = postgres ]; then
+		sudo -u postgres psql -U $DB_USER -d $DB_NAME
+	fi
+}

@@ -18,11 +18,11 @@ wordpress_shutdown() {
 }
 
 wordpress_before_create() {
-	do_things before install wordpress
+	do_things before create wordpress
 }
 
 wordpress_after_create() { 
-	do_things after install wordpress
+	do_things after create wordpress
 }
 
 wordpress_before_install() {
@@ -40,6 +40,30 @@ wordpress_after_install() {
 		try /usr/bin/sudo chmod +x wp-cli.phar
 		try /usr/bin/sudo mv wp-cli.phar wp
 	fi
+	
+	. $NEST_FOLDER/utils/db
+	db_init
+
+	SITE_HOME=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.site.home')
+	SITE_EMAIL=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.site.email')
+	USER_LOGIN_NAME=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.location.name')
+	
+	if [ ! -f /var/app/public/wp-settings.php ]; then
+		try sudo wp core download --path=/var/app/public
+	else
+		sudo rm -f /var/app/public/wp-config.php
+	fi
+
+	try sudo wp core config --path=/var/app/public --dbprefix=wp_ --dbname=$DB_NAME --dbuser=$DB_USER --dbpass=$DB_PASSWORD --dbhost=db --extra-php <<PHP
+define('FS_METHOD','$NEST_WP_FS_METHOD');
+define('WP_POST_REVISIONS','$NEST_WP_POST_REVISIONS');
+PHP
+	try sudo wp core install --path=/var/app/public \
+		--title="Hello World" \
+		--url=$SITE_HOME \
+		--admin_email=$SITE_EMAIL \
+		--admin_user=$USER_LOGIN_NAME \
+		--admin_password=$DB_PASSWORD
 
 	do_things after install wordpress
 }

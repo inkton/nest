@@ -9,19 +9,15 @@ set -xv
 . $NEST_FOLDER/twigs/frameworks/php-5.6.twig
 
 app_init() {
-	yell "my-php-app init ..."
-
-	NEST_APP="my-php-app"
-	NEST_APP_VERSION="1.0"
-	NEST_APP_PACKAGES='[]'
+	yell "app init ..."
 }
 
 app_shutdown() {
-	yell "my-php-app shutdown ..."
+	yell "app shutdown ..."
 }
 
 app_before_create() {
-	yell "my-php-app install ..."; 
+	yell "app create ..."
 
 	NEST_MAX_LOG_SIZE=1048576
 	NEST_PHP_TIMEZONE="US/Central"
@@ -31,12 +27,20 @@ app_before_create() {
 	NEST_PHP_MAX_EXECUTION_TIME=180	
 }
 
+app_before_install() {
+	yell "app install (before) ..."
+}
+
+app_after_install() {
+	yell "app install customize ..."
+}
+
 app_before_upgrade() {
-	yell "my-php-app upgrade ..."; 
+	yell "app upgrade ..." 
 } 
 
 app_before_start() {
-	yell "my-php-app before start ..."; 
+	yell "app before start ..."
 }
 
 twig_links_begin
