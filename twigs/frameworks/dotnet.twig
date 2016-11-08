@@ -1,0 +1,187 @@
+# ------------------------------------------------------
+#	DotNet 1.0 Twig
+#	(c) 2016 Inkton
+#
+
+dotnet_init() {
+	yell "-> dotnet init"; 
+	NEST_LANGUAGE=dotnet
+	NEST_LANGUAGE_VERSION=1.0.0
+	
+	if [ $NEST_CONTAINER_TYPE == "production" ];then
+		NEST_LANGUAGE_PACKAGES='[
+			"dotnet-dev-1.0.0-preview2-003131"
+			]'
+	else
+		NEST_LANGUAGE_PACKAGES='[
+			"dotnet-dev-1.0.0-preview2-003131",
+			"nodejs",
+			"npm"
+			]'
+	fi
+	
+	init_after dotnet
+}
+
+dotnet_shutdown() {
+	shutdown_before dotnet
+}
+
+dotnet_before_create_cushion() {
+        do_things before create_cushion dotnet
+}
+
+dotnet_after_create_cushion() {
+        do_things after create_cushion dotnet
+}
+
+dotnet_before_destroy_cushion() {
+        do_things before destroy_cushion dotnet
+}
+
+dotnet_after_destroy_cushion() {
+        do_things after destroy_cushion dotnet
+}
+
+dotnet_before_install() {
+	yell "-> dotnet_before_install"; 
+	
+	try sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ xenial main" \
+		> /etc/apt/sources.list.d/dotnetdev.list'
+	try sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+	try sudo apt-get update
+
+	do_things before install dotnet
+}
+
+dotnet_after_install() { 
+	yell "-> after_dotnet_install";
+	run_cmd "apt-get -y install" "$NEST_LANGUAGE_PACKAGES"
+
+	if [ $NEST_CUSHION_INDEX == 0 ]; then
+		yell "installing as master ..."
+
+		if [ $NEST_CONTAINER_TYPE == "test" ];then
+			try npm config set prefix /usr/local
+			try npm install -g bower
+		fi
+	fi
+
+	do_things after install dotnet
+}
+
+dotnet_before_update() {
+	yell "-> before_dotnet_update"; 
+	do_things before update dotnet
+}
+
+dotnet_after_update() { 
+	yell "-> after_dotnet_update"; 
+	run_cmd "apt-get -y update" "$NEST_LANGUAGE_PACKAGES"
+	
+	do_things after update dotnet
+}
+
+dotnet_before_upgrade() {
+	yell "-> before_dotnet_upgrade";   
+	do_things before upgrade dotnet
+} 
+
+dotnet_after_upgrade() {
+	yell "-> after_dotnet_upgrade";
+	run_cmd "apt-get -y upgrade" "$NEST_LANGUAGE_PACKAGES"
+	do_things after upgrade dotnet
+}
+
+dotnet_before_remove() {
+	yell "-> before_dotnet_remove"; 
+	do_things before remove dotnet
+}
+
+dotnet_after_remove() { 
+	yell "-> after_dotnet_remove"; 
+	
+	try npm uninstall bower
+	
+	run_cmd "apt-get remove -y" "$NEST_LANGUAGE_PACKAGES"
+
+	do_things after remove dotnet
+}
+
+dotnet_before_info() {
+	yell "-> before_dotnet_info"; 
+	do_things before info dotnet
+}
+
+dotnet_after_info() { 
+	yell "-> after_dotnet_info"; 
+	run_cmd "apt-cache show" "$NEST_LANGUAGE_PACKAGES"
+	do_things after info dotnet
+}
+
+dotnet_before_start() {
+	do_things before start dotnet
+
+		if [ $NEST_CONTAINER_TYPE == "test" ];then
+		if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
+			"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
+		
+			ASPNETCORE_URLS="http://*:5000" dotnet run
+		else
+			ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG".dll
+		fi
+	else
+		if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
+			"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
+			
+			ASPNETCORE_URLS="http://*:5000" dotnet run
+		else
+			ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG".dll
+		fi		
+	fi
+
+	if [ $NEST_CONTAINER_TYPE == "test" ];then
+		cd $NEST_FOLDER_SOURCE
+	else
+		cd $NEST_FOLDER_RELEASE
+	fi
+}                                            
+
+dotnet_after_start() {
+	do_things after start dotnet
+		
+	if [ $NEST_CONTAINER_TYPE == "test" ];then
+		if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
+			"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
+		
+			ASPNETCORE_URLS="http://*:5000" dotnet run
+		else
+			ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG".dll
+		fi
+	else
+		if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
+			"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
+			
+			ASPNETCORE_URLS="http://*:5000" dotnet run
+		else
+			ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG".dll
+		fi		
+	fi
+}
+
+dotnet_before_stop() {
+	do_things before stop dotnet
+	sudo kill -SIGTERM `cat /tmp/krestal-pid`
+}
+
+dotnet_after_stop() {
+	do_things after stop dotnet
+}
+
+dotnet_before_daily() {
+	do_things before daily dotnet
+}
+
+dotnet_after_daily() {
+	do_things after daily dotnet
+}

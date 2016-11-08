@@ -1,0 +1,20 @@
+# ------------------------------------------------------
+#	shell utils
+#	(c) 2016 Inkton
+#  
+
+shell_create_group() {
+	getent group $2 &>/dev/null || try groupadd --force --gid $1 $2
+}
+
+shell_create_user() {
+	getent passwd $2 &>/dev/nul || try useradd --uid $1 --create-home --gid $3 $2
+}
+
+shell_make_user_sudo() {
+	try echo "$1	ALL=NOPASSWD: ALL"  >> /etc/sudoers.d/99-forest-sudoers
+}
+
+shell_setup_remote_user() {
+	try asuser $1 'ssh-keygen -t rsa '
+}

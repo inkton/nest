@@ -1,0 +1,24 @@
+#!/bin/bash
+
+. $NEST_FOLDER_HOME/utils/prefix
+
+if [ "$NEST_CUSHION_CREATED" != "yes" ]; then
+
+	if [ "$NEST_CONTAINER_TYPE" == "test" ]; then
+		# the test containers that comes with
+		# docker-compose do not have the container
+		# setup with the user an nest.app file
+		# in the workarea for example.  this
+		# initializes the container
+		try nester init
+	fi
+	
+	NEST_OPERATION=create_cushion $NEST_FOLDER_APP/app.nest
+
+	if [ $? -eq 0 ]; then
+		NEST_OPERATION=install $NEST_FOLDER_APP/app.nest
+	fi
+
+fi
+
+NEST_OPERATION=start $NEST_FOLDER_APP/app.nest

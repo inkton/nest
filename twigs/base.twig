@@ -12,37 +12,21 @@
 #	stages of cushion creation
 #
 #	stage 1 - create docker
-#			base packages sudo jq openssl ca-certificates installed 
-#			user group created
+#			base packages installed 
 #	stage 2 - create platform
-#			create logs
 #			create cushion settings
+#			user group created
 #			create app admin
 #
 
-source $NEST_FOLDER/utils/prefix
+. $NEST_FOLDER_HOME/utils/prefix
 
 twig_links_begin() {
 	NEST_BASE_VERSION=1.0
 	NEST_TWIG_RUN_TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
 	NEST_LANGUAGE=''
 	NEST_LANGUAGE_VERSION=''
-
-	NEST_TWIG_FOLDER=$NEST_FOLDER/twigs
-	NEST_TWIG_UTILS_FOLDER=$NEST_TWIG_FOLDER/utils
-	NEST_TWIG_FRAMEWORKS_FOLDER=$NEST_TWIG_FOLDER/frameworks
-	NEST_TWIG_APP_FOLDER=$NEST_TWIG_FOLDER/apps
-
-	if [ -z "$NEST_OPERATION" ]; then
-		# default operation is start
-		NEST_OPERATION=start
-	fi
-
-	if [ "$NEST_DB_VENDOR" = mysql ]; then
-		NEST_BASE_PACKAGES='["mariadb-client"]'
-	elif [ "$NEST_DB_VENDOR" = postgres ]; then
-		NEST_BASE_PACKAGES='["postgresql-client"]'
-	fi
+	NEST_BASE_PACKAGES='["git", "openssl", "ca-certificates"]'
 }
 
 link_twigs() {
@@ -105,7 +89,6 @@ do_things() {
 
 base_init() {
 	yell "<- begin ->"; 
-	source /etc/os-release
 	init_after base
 }
 
@@ -121,153 +104,152 @@ twig_links_end()  {
 	base_shutdown
 }
 
-create_log() {
-        if [ -f "$NEST_CUSHION_LOG_PATH" ]; then
-                > $NEST_CUSHION_LOG_PATH
-        else
-                try /bin/touch $NEST_CUSHION_LOG_PATH
-                try /bin/chmod -R a+w $NEST_CUSHION_LOG_PATH
-        fi
-}
-
 create_settings() {
+	NEST_CUSHION_SITE_VERSION=1
+	NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
+	NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 
-	if [ -f "$NEST_CUSHION_SETTINGS_PATH" ]; then
-		try source $NEST_CUSHION_SETTINGS_PATH
-		
-		if [ $NEST_CUSHION_LANGUAGE != $NEST_LANGUAGE ]; then
-			yell "remove the existing install using the $NEST_LANGUAGE twig before installing another lanuage type!"
-			exit -1
-		fi
+	NEST_TWIG_FOLDER=$NEST_FOLDER_HOME/twigs
+	NEST_TWIG_UTILS_FOLDER=$NEST_FOLDER_HOME/utils
+	NEST_TWIG_FRAMEWORKS_FOLDER=$NEST_FOLDER_HOME/frameworks
+	NEST_TWIG_APP_FOLDER=$NEST_FOLDER_HOME/apps
 
-	else
-		try touch $NEST_CUSHION_SETTINGS_PATH
-		try echo "NEST_CUSHION_SITE_VERSION=1
-NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
-NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
-" > $NEST_CUSHION_SETTINGS_PATH
+	echo $NEST_CUSHION_SITE_VERSION > /etc/container_environment/NEST_CUSHION_SITE_VERSION
+	echo $NEST_CUSHION_LANGUAGE > /etc/container_environment/NEST_CUSHION_LANGUAGE
+	echo $NEST_CUSHION_LANGUAGE_VERSION > /etc/container_environment/NEST_CUSHION_LANGUAGE_VERSION
+	
+	echo $NEST_TWIG_FOLDER > /etc/container_environment/NEST_TWIG_FOLDER
+	echo $NEST_TWIG_UTILS_FOLDER > /etc/container_environment/NEST_TWIG_UTILS_FOLDER
+	echo $NEST_TWIG_FRAMEWORKS_FOLDER > /etc/container_environment/NEST_TWIG_FRAMEWORKS_FOLDER
+	echo $NEST_TWIG_APP_FOLDER > /etc/container_environment/NEST_TWIG_APP_FOLDER
 
-	fi
-
-	try /bin/chmod +x $NEST_CUSHION_SETTINGS_PATH
+	> /etc/sudoers.d/99-forest-sudoers
 } 
 
 secure_access() {
 	yell "securing access to the public area"
 
-	try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
-	try /bin/chown -R $NEST_APP_USER_UID:$NEST_APP_GROUP $NEST_FOLDER_PUBLIC
-
-	try find $NEST_FOLDER_PUBLIC -type d -exec /bin/chmod 775 {} \;  # Change directory permissions rwxr-xr-x
-	try find $NEST_FOLDER_PUBLIC -type f -exec /bin/chmod 644 {} \;  # Change file permissions rw-r--r--
-}
- 
-create_registry() {
-	yell "creating a new app registry"
-try cat > $NEST_APP_REGISTRY_PATH <<EOL
-{
-  "site": {
-    "home": "$NEST_SITE_HOME",
-    "email": "$NEST_SITE_EMAIL",
-    "description": "-",
-    "organization": "$NEST_SITE_ORG",
-    "version": 1
-  },
-  "location": {
-    "id": "$NEST_ID",
-    "name": "$NEST_NAME",
-    "tree": "$NEST_LOCATION_TREE",
-    "forest": "$NEST_LOCATION_FOREST"
-  },
-  "database": {
-    "vendor": "$NEST_DB_VENDOR",
-    "name": "$NEST_DB_NAME",
-    "user": "$NEST_DB_USER",
-    "password": "$NEST_DB_PASSWORD",
-    "hostname": "$NEST_DB_HOST_NAME",
-    "charset": "utf8",
-    "collate": "utf8_general_ci"
-  },
-  "twig":  {
-    "language" : "$NEST_LANGUAGE",
-    "version" : "$NEST_LANGUAGE_VERSION"
-  }
-}
-EOL
+	try chown -R webadmin:tree $NEST_FOLDER_APP
+	try chown -R webuser:tree $NEST_FOLDER_APP/release
+	
+	# Change directory permissions rwxr-xr-x
+	try find $NEST_FOLDER_APP -type d -exec /bin/chmod 775 {} \;
+	# Change file permissions rw-r--r--
+	try find $NEST_FOLDER_APP -type f -exec /bin/chmod 644 {} \;  
+	
+	try chmod +x $NEST_FOLDER_APP/app.nest;
 }
 
-create_app_admin() {
-	ret=false
-	getent passwd $NEST_NAME >/dev/null 2>&1 && ret=true
+create_users() {
+	. $NEST_TWIG_UTILS_FOLDER/shell 
+	. $NEST_TWIG_UTILS_FOLDER/git
 
-	if $ret; then
-		yell "user $NEST_NAME already exist"
-	else
-		try /usr/sbin/adduser -D -u $NEST_APP_ADMIN_UID -G $NEST_APP_GROUP -h "/home/$NEST_APP_ADMIN" $NEST_APP_ADMIN 
-		try echo "$NEST_APP_ADMIN	ALL=NOPASSWD: ALL"  > /etc/sudoers
+	NEST_NETWORK_PASSWORD=$(jq -r ".network_password" /var/app/app.json)
 
-		try /bin/mkdir "/home/$NEST_APP_ADMIN/.ssh"
-		try /bin/chmod -R 600 "/home/$NEST_APP_ADMIN/.ssh"
-		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP "/home/$NEST_APP_ADMIN"
-		try /bin/chown -R $NEST_APP_ADMIN_UID:$NEST_APP_GROUP $NEST_HOME
-	fi
+	shell_create_group 1008 tree
+
+	shell_create_user 1012 webuser tree $NEST_NETWORK_PASSWORD
+	shell_create_user 1016 webadmin tree $NEST_NETWORK_PASSWORD
+	shell_make_user_sudo webadmin
+
+	jq -r '.contacts|keys[]' /var/app/app.json | while read key ; do
+		NEST_USER_ID=$(jq ".contacts[$key].id" /var/app/app.json)
+		NEST_USER_EMAIL=$(jq ".contacts[$key].email" /var/app/app.json)
+
+		shell_create_user $NEST_USER_ID $NEST_USER_ID tree
+		git_create_user $NEST_USER_ID $NEST_USER_EMAIL $NEST_USER_EMAIL
+	done
 }
 
 create_cushion() {
+	do_things before create_cushion base
 
 	# ----------------
 	#  stage 2 create
 	# ----------------
 		
-	create_log
 	create_settings
-	create_app_admin
+	create_users
+	
+	if [ $? -eq 0 ]; then
+
+		NEST_CUSHION_CREATED=yes
+		echo $NEST_CUSHION_CREATED > /etc/container_environment/NEST_CUSHION_CREATED
+	
+	fi
+
+	do_things after create_cushion base
 }
 
 destroy_cushion() {
-	rm -f $$NEST_CUSHION_LOG_PATH
-	rm -f $NEST_CUSHION_SETTINGS_PATH
-	deluser --remove-home $NEST_APP_ADMIN
+	do_things before destroy_cushion base
+	
+	NEST_CUSHION_CREATED=no
+	echo $NEST_CUSHION_CREATED > /etc/container_environment/NEST_CUSHION_CREATED
+	
+	do_things after destroy_cushion base
 }
 
 install() {
 	do_things before install base
-	run_cmd "/sbin/apk --update add" "$NEST_BASE_PACKAGES"
+	run_cmd "apt-get install -y" "$NEST_BASE_PACKAGES"
 
-	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
-		yell "installing as master ..."
-		create_registry
-	fi
+	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
+	while read NEST_SERVICE_TAG ; do
+		if [ "$NEST_SERVICE_TAG" == "mariadb" ] ;then
+			apt-get install -y mariadb-client
+			restore_db_schema
+			restore_db_data
+		fi
+	done
 
 	do_things after install base
-
-	restore_db_schema
-	restore_db_data
 }
 
 update() {
 	do_things before update base
-	run_cmd "/sbin/apk update" "$NEST_BASE_PACKAGES"
-	run_cmd "/sbin/apk cache -v sync"
+	run_cmd "apt-get update -y" "$NEST_BASE_PACKAGES"
+
+	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
+	while read NEST_SERVICE_TAG ; do
+		if [ "$NEST_SERVICE_TAG" == "mariadb" ] ;then
+			apt-get install -y mariadb-client
+			restore_db_schema
+			restore_db_data
+		fi
+	done
+	
 	do_things after update base
 }
 
 upgrade() {
 	do_things before upgrade base
-	run_cmd "/sbin/apk --update upgrade" "$NEST_BASE_PACKAGES"
-	run_cmd "/sbin/apk cache -v sync"
+	
+	# upgrade the system
+	apt-get upgrade -y -o Dpkg::Options::="--force-confold"	
+	run_cmd "apt-get upgrade -y" "$NEST_BASE_PACKAGES"
+
+	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
+	while read NEST_SERVICE_TAG ; do
+		if [ "$NEST_SERVICE_TAG" == "mariadb" ] ;then
+			apt-get upgrade -y mariadb-client
+		fi
+	done
+
 	do_things after upgrade base
 }
 
 remove() {
 	do_things before remove base
 
-	run_cmd "/sbin/apk del" "$NEST_BASE_PACKAGES"
+	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
+	while read NEST_SERVICE_TAG ; do
+		if [ "$NEST_SERVICE_TAG" == "mariadb" ] ;then
+			apt-get remove -y mariadb-client
+		fi
+	done
 
-	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
-		yell "removing the registry ..."
-		fly rm -f $NEST_APP_REGISTRY_PATH
-	fi
+	run_cmd "apt-get remove -y" "$NEST_BASE_PACKAGES"
 
 	fly rm -f $NEST_CUSHION_SETTINGS_PATH
 
@@ -277,21 +259,16 @@ remove() {
 info() {
 	do_things before info base
 
-	yell "*** begin package stats **** "
-	try /sbin/apk stats
-	yell "*** end package stats **** "
+	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
+	while read NEST_SERVICE_TAG ; do
+		if [ "$NEST_SERVICE_TAG" == "mariadb" ] ;then
+			apt-get show mariadb-client
+		fi
+	done
 
-	yell "*** begin package info **** "
-	fly /sbin/apk -vv info|sort
+	run_cmd "apt-cache show" "$NEST_BASE_PACKAGES"
 
-	run_cmd "/sbin/apk version" "$NEST_BASE_PACKAGES"
-	run_cmd "/sbin/apk audit" "$NEST_BASE_PACKAGES"
-
-	yell "*** end package info **** "
-
-	yell "*** begin app settings **** "
 	cat $NEST_APP_SETTINGS_PATH
-	yell "*** end app settings **** "
 
 	do_things after info base
 }
@@ -316,27 +293,18 @@ stop() {
 daily() {
 	do_things before daily base
 	
-	NEST_SITE_VERSION=$(cat $NEST_APP_REGISTRY_PATH | jq -r '.site.version')
-	try source $NEST_CUSHION_SETTINGS_PATH
-
-	yell "ugrade needed? cushion version $NEST_CUSHION_SITE_VERSION == site ver $NEST_SITE_VERSION ?  ..."		
-	if [ $NEST_CUSHION_SITE_VERSION -ne $NEST_SITE_VERSION ]; then
-		yell "cushion needs an update ..."
-		NEST_OPERATION=update /bin/sh $NEST_APP_TWIG_PATH
-	fi
-	
 	do_things after daily base
 }
 
 change_db_password() {
 	yell "backup db"
-	try source $NEST_TWIG_UTILS_FOLDER/db 
+	. $NEST_TWIG_UTILS_FOLDER/db 
 	db_change_password
 }
 
 backup_db() {
 	yell "backup db"
-	try source $NEST_TWIG_UTILS_FOLDER/db 
+	. $NEST_TWIG_UTILS_FOLDER/db 
 	
 	db_backup_schema
 	db_backup_data
@@ -344,7 +312,7 @@ backup_db() {
 
 restore_db() {
 	yell "restore schema"
-	try source $NEST_TWIG_UTILS_FOLDER/db
+	. $NEST_TWIG_UTILS_FOLDER/db
 	
 	db_restore_schema
 	db_restore_data	

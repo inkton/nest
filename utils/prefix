@@ -16,19 +16,22 @@ die() {
 }
 
 try() {
+	# fail if error
 	"$@" || die "cannot $*" ; 
 }
 
 fly() {
- "$@"; 
+	# ignore if error
+	"$@" || true; 
 }
 
-asadmin() {
-	/bin/su - "$NEST_APP_ADMIN" -c "${*:1}"; 
+asuser() {
+	sudo su - "$1" -c "${*:2}";
 } 
 
-function_exists()  { 
-	type $1 | /bin/grep -q 'shell function'; 
+function_exists() {
+    declare -f -F $1 > /dev/null
+    return $?
 }
 
 run_cmd() {                               

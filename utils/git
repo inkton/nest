@@ -1,0 +1,12 @@
+# ------------------------------------------------------
+#	git utils
+#	(c) 2016 Inkton
+#
+
+git_create_user() {
+	try asuser $1 "git config --global user.email '$2'"
+	try asuser $1 "git config --global user.name '$3'"
+	try asuser $1 "git config --global core.autocrlf false"
+	try asuser $1 "git config --global push.default simple"
+}
+
