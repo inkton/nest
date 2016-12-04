@@ -60,7 +60,12 @@ dotnet_after_install() {
 
 	if [ $NEST_CUSHION_INDEX == 0 ]; then
 		yell "installing as master ..."
-
+	
+		. $NEST_TWIG_UTILS_FOLDER/shell
+		shell_set_nest_folder
+		   
+                dotnet restore
+		   
 		if [ $NEST_CONTAINER_TYPE == "test" ];then
 			try npm config set prefix /usr/local
 			try npm install -g bower
@@ -122,29 +127,9 @@ dotnet_after_info() {
 dotnet_before_start() {
 	do_things before start dotnet
 
-		if [ $NEST_CONTAINER_TYPE == "test" ];then
-		if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
-			"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
-		
-			ASPNETCORE_URLS="http://*:5000" dotnet run
-		else
-			ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG".dll
-		fi
-	else
-		if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
-			"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
-			
-			ASPNETCORE_URLS="http://*:5000" dotnet run
-		else
-			ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG".dll
-		fi		
-	fi
+	. $NEST_TWIG_UTILS_FOLDER/shell
+	shell_set_nest_folder
 
-	if [ $NEST_CONTAINER_TYPE == "test" ];then
-		cd $NEST_FOLDER_SOURCE
-	else
-		cd $NEST_FOLDER_RELEASE
-	fi
 }                                            
 
 dotnet_after_start() {

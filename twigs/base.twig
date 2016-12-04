@@ -19,7 +19,7 @@
 #			create app admin
 #
 
-. $NEST_FOLDER_HOME/utils/prefix
+. $NEST_FOLDER_TREE/nest/utils/prefix
 
 twig_links_begin() {
 	NEST_BASE_VERSION=1.0
@@ -88,7 +88,8 @@ do_things() {
 }
 
 base_init() {
-	yell "<- begin ->"; 
+	yell "<- begin ->"
+	. /etc/container_environment.sh
 	init_after base
 }
 
@@ -109,10 +110,10 @@ create_settings() {
 	NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
 	NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 
-	NEST_TWIG_FOLDER=$NEST_FOLDER_HOME/twigs
-	NEST_TWIG_UTILS_FOLDER=$NEST_FOLDER_HOME/utils
-	NEST_TWIG_FRAMEWORKS_FOLDER=$NEST_FOLDER_HOME/frameworks
-	NEST_TWIG_APP_FOLDER=$NEST_FOLDER_HOME/apps
+	NEST_TWIG_FOLDER=$NEST_FOLDER_TREE/nest/twigs
+	NEST_TWIG_UTILS_FOLDER=$NEST_FOLDER_TREE/nest/utils
+	NEST_TWIG_FRAMEWORKS_FOLDER=$NEST_FOLDER_TREE/nest/frameworks
+	NEST_TWIG_APP_FOLDER=$NEST_FOLDER_TREE/nest/apps
 
 	echo $NEST_CUSHION_SITE_VERSION > /etc/container_environment/NEST_CUSHION_SITE_VERSION
 	echo $NEST_CUSHION_LANGUAGE > /etc/container_environment/NEST_CUSHION_LANGUAGE
@@ -152,13 +153,15 @@ create_users() {
 	shell_create_user 1016 webadmin tree $NEST_NETWORK_PASSWORD
 	shell_make_user_sudo webadmin
 
-	jq -r '.contacts|keys[]' /var/app/app.json | while read key ; do
-		NEST_USER_ID=$(jq ".contacts[$key].id" /var/app/app.json)
-		NEST_USER_EMAIL=$(jq ".contacts[$key].email" /var/app/app.json)
+	if [ "$NEST_CONTAINER_TYPE" != test ]; then
+		jq -r '.contacts|keys[]' /var/app/app.json | while read key ; do
+			NEST_USER_ID=$(jq ".contacts[$key].id" /var/app/app.json)
+			NEST_USER_EMAIL=$(jq ".contacts[$key].email" /var/app/app.json)
 
-		shell_create_user $NEST_USER_ID $NEST_USER_ID tree
-		git_create_user $NEST_USER_ID $NEST_USER_EMAIL $NEST_USER_EMAIL
-	done
+			shell_create_user $NEST_USER_ID $NEST_USER_ID tree
+			git_create_user $NEST_USER_ID $NEST_USER_EMAIL $NEST_USER_EMAIL
+		done
+	fi
 }
 
 create_cushion() {

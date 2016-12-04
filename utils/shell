@@ -18,3 +18,13 @@ shell_make_user_sudo() {
 shell_setup_remote_user() {
 	try asuser $1 'ssh-keygen -t rsa '
 }
+
+shell_set_nest_folder() {
+
+	if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
+		"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
+		cd /var/app/source
+	else
+		cd "/var/app/source/workers/$NEST_TAG"
+	fi
+}
