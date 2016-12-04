@@ -153,7 +153,7 @@ create_users() {
 	shell_create_user 1016 webadmin tree $NEST_NETWORK_PASSWORD
 	shell_make_user_sudo webadmin
 
-	if [ "$NEST_CONTAINER_TYPE" != test ]; then
+	if [ "$NEST_CONTAINER_TYPE" != "test" ]; then
 		jq -r '.contacts|keys[]' /var/app/app.json | while read key ; do
 			NEST_USER_ID=$(jq ".contacts[$key].id" /var/app/app.json)
 			NEST_USER_EMAIL=$(jq ".contacts[$key].email" /var/app/app.json)
