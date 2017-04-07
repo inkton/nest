@@ -6,15 +6,15 @@
 dotnet_init() {
 	yell "-> dotnet init"; 
 	NEST_LANGUAGE=dotnet
-	NEST_LANGUAGE_VERSION=1.0.0
+	NEST_LANGUAGE_VERSION=1.0.1
 	
 	if [ $NEST_CONTAINER_TYPE == "production" ];then
 		NEST_LANGUAGE_PACKAGES='[
-			"dotnet-dev-1.0.0-preview2-003131"
+			"dotnet-dev-1.0.1"
 			]'
 	else
 		NEST_LANGUAGE_PACKAGES='[
-			"dotnet-dev-1.0.0-preview2-003131",
+			"dotnet-dev-1.0.1",
 			"nodejs",
 			"npm"
 			]'
