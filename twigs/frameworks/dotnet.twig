@@ -136,20 +136,20 @@ dotnet_after_start() {
 	do_things after start dotnet
 		
 	if [ $NEST_CONTAINER_TYPE == "test" ];then
-		if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
-			"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
+		if [[ "$NEST_HOST_PLATFORM_TAG" == "mvc.net" || \
+			"$NEST_HOST_PLATFORM_TAG" == "webapi.net" ]];then
 		
 			ASPNETCORE_URLS="http://*:5000" dotnet run
 		else
-			ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG".dll
+			dotnet "$NEST_TAG".dll
 		fi
 	else
-		if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
-			"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
+		if [[ "$NEST_HOST_PLATFORM_TAG" == "mvc.net" || \
+			"$NEST_HOST_PLATFORM_TAG" == "webapi.net" ]];then
 			
 			ASPNETCORE_URLS="http://*:5000" dotnet run
 		else
-			ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG".dll
+			dotnet "$NEST_TAG".dll
 		fi		
 	fi
 }
