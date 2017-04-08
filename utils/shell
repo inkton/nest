@@ -20,11 +20,5 @@ shell_setup_remote_user() {
 }
 
 shell_set_nest_folder() {
-
-	if [[ "$NEST_HOST_PLATFORM_TAG" == "web.net" || \
-		"$NEST_HOST_PLATFORM_TAG" == "web-socket.net" ]];then
-		cd /var/app/source
-	else
-		cd "/var/app/source/workers/$NEST_TAG"
-	fi
+	cd "$NEST_FOLDER_SOURCE"
 }
