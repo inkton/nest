@@ -65,10 +65,14 @@ dotnet_after_install() {
 		shell_set_nest_folder
 		   
                 dotnet restore
-		   
+		
 		if [ $NEST_CONTAINER_TYPE == "test" ];then
+			dotnet build --configuration Debug
+
 			try npm config set prefix /usr/local
 			try npm install -g bower
+		else
+			dotnet build --configuration Release
 		fi
 	fi
 
@@ -141,7 +145,7 @@ dotnet_after_start() {
 		
 			ASPNETCORE_URLS="http://*:5000" dotnet run
 		else
-			dotnet "$NEST_TAG".dll
+			dotnet run
 		fi
 	else
 		if [[ "$NEST_HOST_PLATFORM_TAG" == "mvc.net" || \
@@ -149,7 +153,7 @@ dotnet_after_start() {
 			
 			ASPNETCORE_URLS="http://*:5000" dotnet run
 		else
-			dotnet "$NEST_TAG".dll
+			dotnet run
 		fi		
 	fi
 }
