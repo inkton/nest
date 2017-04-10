@@ -41,7 +41,7 @@ php_after_install() {
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
 		yell "installing as master ..."
 
-		source $NEST_FOLDER_UTILS_FOLDER/uwsgi
+		source $NEST_FOLDER_TWIG_UTILS/uwsgi
 		uwsgi_new_install
 
 try echo "
@@ -142,7 +142,7 @@ php_after_remove() {
 	run_cmd "/sbin/apk del" "$NEST_LANGUAGE_PACKAGES"
 
 	if [ $NEST_CONTAINER_TYPE == "cushion_master" ]; then
-		source $NEST_FOLDER_UTILS_FOLDER/uwsgi
+		source $NEST_FOLDER_TWIG_UTILS/uwsgi
 		uwsgi_remove_install
 	fi
 
@@ -170,13 +170,13 @@ php_before_start() {
 
 php_after_start() {
 	do_things after start php
-	source $NEST_FOLDER_UTILS_FOLDER/uwsgi
+	source $NEST_FOLDER_TWIG_UTILS/uwsgi
 	uwsgi_start
 }
                                            
 php_before_stop() {
 	do_things before stop php
-	source $NEST_FOLDER_UTILS_FOLDER/uwsgi
+	source $NEST_FOLDER_TWIG_UTILS/uwsgi
 	uwsgi_stop
 }
 
