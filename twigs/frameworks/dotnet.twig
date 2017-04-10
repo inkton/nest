@@ -45,12 +45,10 @@ dotnet_after_destroy_cushion() {
 
 dotnet_before_install() {
 	yell "-> dotnet_before_install"; 
-	
-	try sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ xenial main" \
-		> /etc/apt/sources.list.d/dotnetdev.list'
-	try sudo apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893
+	try sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ xenial main" > /etc/apt/sources.list.d/dotnetdev.list'
+	try sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 417A0893
 	try sudo apt-get update
-
+	
 	do_things before install dotnet
 }
 
