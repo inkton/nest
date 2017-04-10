@@ -143,17 +143,17 @@ dotnet_after_start() {
 		if [[ "$NEST_HOST_PLATFORM_TAG" == "mvc.net" || \
 			"$NEST_HOST_PLATFORM_TAG" == "webapi.net" ]];then
 		
-			ASPNETCORE_URLS="http://*:5000" dotnet run
+			ASPNETCORE_URLS="http://*:5000" dotnet run --configuration Debug
 		else
-			dotnet run
+			dotnet run --configuration Debug
 		fi
 	else
 		if [[ "$NEST_HOST_PLATFORM_TAG" == "mvc.net" || \
 			"$NEST_HOST_PLATFORM_TAG" == "webapi.net" ]];then
 			
-			ASPNETCORE_URLS="http://*:5000" dotnet run
+			ASPNETCORE_URLS="http://*:5000" dotnet run --configuration Release
 		else
-			dotnet run
+			dotnet run --configuration Release
 		fi		
 	fi
 }
