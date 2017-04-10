@@ -110,20 +110,10 @@ create_settings() {
 	NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
 	NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
 
-	NEST_TWIG_FOLDER=$NEST_FOLDER_TREE/nest/twigs
-	NEST_TWIG_UTILS_FOLDER=$NEST_FOLDER_TREE/nest/utils
-	NEST_TWIG_FRAMEWORKS_FOLDER=$NEST_FOLDER_TREE/nest/frameworks
-	NEST_TWIG_APP_FOLDER=$NEST_FOLDER_TREE/nest/apps
-
 	echo $NEST_CUSHION_SITE_VERSION > /etc/container_environment/NEST_CUSHION_SITE_VERSION
 	echo $NEST_CUSHION_LANGUAGE > /etc/container_environment/NEST_CUSHION_LANGUAGE
 	echo $NEST_CUSHION_LANGUAGE_VERSION > /etc/container_environment/NEST_CUSHION_LANGUAGE_VERSION
 	
-	echo $NEST_TWIG_FOLDER > /etc/container_environment/NEST_TWIG_FOLDER
-	echo $NEST_TWIG_UTILS_FOLDER > /etc/container_environment/NEST_TWIG_UTILS_FOLDER
-	echo $NEST_TWIG_FRAMEWORKS_FOLDER > /etc/container_environment/NEST_TWIG_FRAMEWORKS_FOLDER
-	echo $NEST_TWIG_APP_FOLDER > /etc/container_environment/NEST_TWIG_APP_FOLDER
-
 	> /etc/sudoers.d/99-forest-sudoers
 } 
 
@@ -136,14 +126,12 @@ secure_access() {
 	# Change directory permissions rwxr-xr-x
 	try find $NEST_FOLDER_SOURCE -type d -exec /bin/chmod 775 {} \;
 	# Change file permissions rw-r--r--
-	try find $NEST_FOLDER_SOURCE -type f -exec /bin/chmod 644 {} \;  
-	
-	try chmod +x $NEST_FOLDER_APP/app.nest;
+	try find $NEST_FOLDER_SOURCE -type f -exec /bin/chmod 644 {} \; 	
 }
 
 create_users() {
-	. $NEST_TWIG_UTILS_FOLDER/shell 
-	. $NEST_TWIG_UTILS_FOLDER/git
+	. $NEST_FOLDER_UTILS_FOLDER/shell 
+	. $NEST_FOLDER_UTILS_FOLDER/git
 
 	NEST_NETWORK_PASSWORD=$(jq -r ".network_password" /var/app/app.json)
 
@@ -301,13 +289,13 @@ daily() {
 
 change_db_password() {
 	yell "backup db"
-	. $NEST_TWIG_UTILS_FOLDER/db 
+	. $NEST_FOLDER_UTILS_FOLDER/db 
 	db_change_password
 }
 
 backup_db() {
 	yell "backup db"
-	. $NEST_TWIG_UTILS_FOLDER/db 
+	. $NEST_FOLDER_UTILS_FOLDER/db 
 	
 	db_backup_schema
 	db_backup_data
@@ -315,7 +303,7 @@ backup_db() {
 
 restore_db() {
 	yell "restore schema"
-	. $NEST_TWIG_UTILS_FOLDER/db
+	. $NEST_FOLDER_UTILS_FOLDER/db
 	
 	db_restore_schema
 	db_restore_data	
