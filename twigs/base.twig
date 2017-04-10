@@ -130,8 +130,8 @@ secure_access() {
 }
 
 create_users() {
-	. $NEST_FOLDER_UTILS_FOLDER/shell 
-	. $NEST_FOLDER_UTILS_FOLDER/git
+	. $NEST_FOLDER_TWIG_UTILS/shell 
+	. $NEST_FOLDER_TWIG_UTILS/git
 
 	NEST_NETWORK_PASSWORD=$(jq -r ".network_password" /var/app/app.json)
 
@@ -289,13 +289,13 @@ daily() {
 
 change_db_password() {
 	yell "backup db"
-	. $NEST_FOLDER_UTILS_FOLDER/db 
+	. $NEST_FOLDER_TWIG_UTILS/db 
 	db_change_password
 }
 
 backup_db() {
 	yell "backup db"
-	. $NEST_FOLDER_UTILS_FOLDER/db 
+	. $NEST_FOLDER_TWIG_UTILS/db 
 	
 	db_backup_schema
 	db_backup_data
@@ -303,7 +303,7 @@ backup_db() {
 
 restore_db() {
 	yell "restore schema"
-	. $NEST_FOLDER_UTILS_FOLDER/db
+	. $NEST_FOLDER_TWIG_UTILS/db
 	
 	db_restore_schema
 	db_restore_data	
