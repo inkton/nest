@@ -61,7 +61,7 @@ dotnet_after_install() {
 	if [ $NEST_CUSHION_INDEX == 0 ]; then
 		yell "installing as master ..."
 	
-		. $NEST_FOLDER_UTILS_FOLDER/shell
+		. $NEST_FOLDER_TWIG_UTILS/shell
 		shell_set_nest_folder
 		   
                 dotnet restore
@@ -131,7 +131,7 @@ dotnet_after_info() {
 dotnet_before_start() {
 	do_things before start dotnet
 
-	. $NEST_FOLDER_UTILS_FOLDER/shell
+	. $NEST_FOLDER_TWIG_UTILS/shell
 	shell_set_nest_folder
 
 }                                            
