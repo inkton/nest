@@ -130,13 +130,13 @@ create_settings() {
 secure_access() {
 	yell "securing access to the public area"
 
-	try chown -R webadmin:tree $NEST_FOLDER_APP
-	try chown -R webuser:tree $NEST_FOLDER_APP/release
+	try chown -R webadmin:tree $NEST_FOLDER_SOURCE
+	try chown -R webuser:tree "$NEST_FOLDER_SOURCE/bin"
 	
 	# Change directory permissions rwxr-xr-x
-	try find $NEST_FOLDER_APP -type d -exec /bin/chmod 775 {} \;
+	try find $NEST_FOLDER_SOURCE -type d -exec /bin/chmod 775 {} \;
 	# Change file permissions rw-r--r--
-	try find $NEST_FOLDER_APP -type f -exec /bin/chmod 644 {} \;  
+	try find $NEST_FOLDER_SOURCE -type f -exec /bin/chmod 644 {} \;  
 	
 	try chmod +x $NEST_FOLDER_APP/app.nest;
 }
