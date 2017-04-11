@@ -53,12 +53,15 @@ dotnet_after_install() {
 	
 		. $NEST_FOLDER_TWIG_UTILS/shell
 		shell_set_nest_folder
-		   
+		
+		yell "restore dotnet project ..."
                 dotnet restore
 		
 		if [ $NEST_CONTAINER_TYPE == "test" ];then
+			yell "dotnet build debug ..."		
 			dotnet build --configuration Debug
 		else
+			yell "dotnet build release ..."				
 			dotnet build --configuration Release
 		fi
 	fi
@@ -107,29 +110,34 @@ dotnet_after_info() {
 }
 
 dotnet_before_start() {
-	do_things before start dotnet
-	
+	yell "-> dotnet_before_start"; 
+	do_things before start dotnet	
 	. $NEST_FOLDER_TWIG_UTILS/shell
 	shell_set_nest_folder
 }                                            
 
 dotnet_after_start() {
+	yell "-> dotnet_after_start"; 
 	do_things after start dotnet
 		
 	if [ $NEST_CONTAINER_TYPE == "test" ];then
 		if [[ "$NEST_HOST_PLATFORM_TAG" == "mvc.net" || \
 			"$NEST_HOST_PLATFORM_TAG" == "webapi.net" ]];then
-		
+
+			yell "dotnet run debug on port 5000"
 			ASPNETCORE_URLS="http://*:5000" dotnet run --configuration Debug
 		else
+			yell "dotnet run debug"		
 			dotnet run --configuration Debug
 		fi
 	else
 		if [[ "$NEST_HOST_PLATFORM_TAG" == "mvc.net" || \
 			"$NEST_HOST_PLATFORM_TAG" == "webapi.net" ]];then
 			
+			yell "dotnet run release on port 5000"			
 			ASPNETCORE_URLS="http://*:5000" dotnet run --configuration Release
 		else
+			yell "dotnet run release"				
 			dotnet run --configuration Release
 		fi		
 	fi
