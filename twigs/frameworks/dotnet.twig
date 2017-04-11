@@ -55,14 +55,14 @@ dotnet_after_install() {
 		shell_set_nest_folder
 		
 		yell "restore dotnet project ..."
-                dotnet restore
+                dotnet -v restore
 		
 		if [ $NEST_CONTAINER_TYPE == "test" ];then
 			yell "dotnet build debug ..."		
-			dotnet build --configuration Debug
+			dotnet -v build --configuration Debug
 		else
 			yell "dotnet build release ..."				
-			dotnet build --configuration Release
+			dotnet -v build --configuration Release
 		fi
 	fi
 
@@ -125,20 +125,20 @@ dotnet_after_start() {
 			"$NEST_HOST_PLATFORM_TAG" == "webapi.net" ]];then
 
 			yell "dotnet run debug on port 5000"
-			ASPNETCORE_URLS="http://*:5000" dotnet run --configuration Debug
+			ASPNETCORE_URLS="http://*:5000" dotnet -v run --configuration Debug
 		else
 			yell "dotnet run debug"		
-			dotnet run --configuration Debug
+			dotnet -v run --configuration Debug
 		fi
 	else
 		if [[ "$NEST_HOST_PLATFORM_TAG" == "mvc.net" || \
 			"$NEST_HOST_PLATFORM_TAG" == "webapi.net" ]];then
 			
 			yell "dotnet run release on port 5000"			
-			ASPNETCORE_URLS="http://*:5000" dotnet run --configuration Release
+			ASPNETCORE_URLS="http://*:5000" dotnet -v run --configuration Release
 		else
 			yell "dotnet run release"				
-			dotnet run --configuration Release
+			dotnet -v run --configuration Release
 		fi		
 	fi
 }
