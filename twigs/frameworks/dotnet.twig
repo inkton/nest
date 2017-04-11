@@ -10,13 +10,9 @@ dotnet_init() {
 	
 	if [ $NEST_CONTAINER_TYPE == "production" ];then
 		NEST_LANGUAGE_PACKAGES='[
-			"dotnet-dev-1.0.1"
 			]'
 	else
 		NEST_LANGUAGE_PACKAGES='[
-			"dotnet-dev-1.0.1",
-			"nodejs",
-			"npm"
 			]'
 	fi
 	
@@ -51,7 +47,6 @@ dotnet_before_install() {
 
 dotnet_after_install() { 
 	yell "-> after_dotnet_install";
-	run_cmd "apt-get -y install" "$NEST_LANGUAGE_PACKAGES"
 
 	if [ $NEST_CUSHION_INDEX == 0 ]; then
 		yell "installing as master ..."
@@ -63,9 +58,6 @@ dotnet_after_install() {
 		
 		if [ $NEST_CONTAINER_TYPE == "test" ];then
 			dotnet build --configuration Debug
-
-			try npm config set prefix /usr/local
-			try npm install -g bower
 		else
 			dotnet build --configuration Release
 		fi
@@ -80,9 +72,7 @@ dotnet_before_update() {
 }
 
 dotnet_after_update() { 
-	yell "-> after_dotnet_update"; 
-	run_cmd "apt-get -y update" "$NEST_LANGUAGE_PACKAGES"
-	
+	yell "-> after_dotnet_update"; 	
 	do_things after update dotnet
 }
 
@@ -93,7 +83,6 @@ dotnet_before_upgrade() {
 
 dotnet_after_upgrade() {
 	yell "-> after_dotnet_upgrade";
-	run_cmd "apt-get -y upgrade" "$NEST_LANGUAGE_PACKAGES"
 	do_things after upgrade dotnet
 }
 
@@ -104,11 +93,6 @@ dotnet_before_remove() {
 
 dotnet_after_remove() { 
 	yell "-> after_dotnet_remove"; 
-	
-	try npm uninstall bower
-	
-	run_cmd "apt-get remove -y" "$NEST_LANGUAGE_PACKAGES"
-
 	do_things after remove dotnet
 }
 
@@ -119,16 +103,14 @@ dotnet_before_info() {
 
 dotnet_after_info() { 
 	yell "-> after_dotnet_info"; 
-	run_cmd "apt-cache show" "$NEST_LANGUAGE_PACKAGES"
 	do_things after info dotnet
 }
 
 dotnet_before_start() {
 	do_things before start dotnet
-
+	
 	. $NEST_FOLDER_TWIG_UTILS/shell
 	shell_set_nest_folder
-
 }                                            
 
 dotnet_after_start() {
