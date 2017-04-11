@@ -183,6 +183,8 @@ destroy_cushion() {
 
 install() {
 	do_things before install base
+	
+	try apt-get update -y
 	run_cmd "apt-get install -y" "$NEST_BASE_PACKAGES"
 
 	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
