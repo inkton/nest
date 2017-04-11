@@ -106,11 +106,16 @@ twig_links_end()  {
 }
 
 create_settings() {
+	> /etc/profile.d/99-forest-profile
+	> /etc/sudoers.d/99-forest-sudoers
+	
 	export NEST_CUSHION_SITE_VERSION=1
 	export NEST_CUSHION_LANGUAGE=$NEST_LANGUAGE
 	export NEST_CUSHION_LANGUAGE_VERSION=$NEST_LANGUAGE_VERSION
-
-	> /etc/sudoers.d/99-forest-sudoers
+	
+	echo "export NEST_CUSHION_SITE_VERSION=$NEST_CUSHION_SITE_VERSION" >> /etc/profile.d/99-forest-profile
+	echo "export NEST_CUSHION_LANGUAGE=$NEST_CUSHION_LANGUAGE" >> /etc/profile.d/99-forest-profile
+	echo "export NEST_CUSHION_SITE_VERSION=$NEST_CUSHION_SITE_VERSION" >> /etc/profile.d/99-forest-profile	
 } 
 
 secure_access() {
@@ -161,8 +166,7 @@ create_cushion() {
 	if [ $? -eq 0 ]; then
 
 		NEST_CUSHION_CREATED=yes
-		echo $NEST_CUSHION_CREATED > /etc/container_environment/NEST_CUSHION_CREATED
-	
+		echo "export NEST_CUSHION_CREATED=$NEST_CUSHION_CREATED" >> /etc/profile.d/99-forest-profile			
 	fi
 
 	do_things after create_cushion base
@@ -172,7 +176,7 @@ destroy_cushion() {
 	do_things before destroy_cushion base
 	
 	NEST_CUSHION_CREATED=no
-	echo $NEST_CUSHION_CREATED > /etc/container_environment/NEST_CUSHION_CREATED
+	echo "export NEST_CUSHION_CREATED=$NEST_CUSHION_CREATED" >> /etc/profile.d/99-forest-profile
 	
 	do_things after destroy_cushion base
 }
