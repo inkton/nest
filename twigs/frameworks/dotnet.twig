@@ -69,7 +69,7 @@ dotnet_after_install() {
 			dotnet build --configuration Release
 		fi
 		
-		dotnet publish /p:PublishDir="../../publish/$NEST_TAG"
+		dotnet publish /p:PublishDir="$NEST_FOLDER_PUBLISH"
 	fi
 
 	do_things after install dotnet
@@ -118,8 +118,7 @@ dotnet_after_info() {
 dotnet_before_start() {
 	yell "-> dotnet_before_start"; 
 	do_things before start dotnet	
-	. $NEST_FOLDER_TWIG_UTILS/shell
-	shell_set_nest_folder
+	cd "$NEST_FOLDER_PUBLISH"
 }                                            
 
 dotnet_after_start() {
@@ -127,17 +126,16 @@ dotnet_after_start() {
 	do_things after start dotnet
 	
 	yell "dotnet run debug on port 5000" 
-	cd "../../publish/$NEST_TAG"
 	ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG.dll"
 }
 
 dotnet_before_stop() {
 	do_things before stop dotnet
-	sudo killall dotnet
 }
 
 dotnet_after_stop() {
 	do_things after stop dotnet
+	sudo killall dotnet
 }
 
 dotnet_before_daily() {

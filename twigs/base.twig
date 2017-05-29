@@ -123,7 +123,7 @@ secure_access() {
 	yell "securing access to the public area"
 
 	try chown -R webadmin:tree $NEST_FOLDER_SOURCE
-	try chown -R webuser:tree "$NEST_FOLDER_SOURCE/bin"
+	try chown -R webuser:tree $NEST_FOLDER_PUBLISH
 	
 	# Change directory permissions rwxr-xr-x
 	try find $NEST_FOLDER_SOURCE -type d -exec /bin/chmod 775 {} \;
