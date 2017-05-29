@@ -27,6 +27,8 @@ twig_links_begin() {
 	NEST_LANGUAGE=''
 	NEST_LANGUAGE_VERSION=''
 	NEST_BASE_PACKAGES='["git", "openssl", "ca-certificates"]'
+
+	. /etc/profile.d/99-forest-profile
 }
 
 link_twigs() {
