@@ -2,6 +2,6 @@
 
 . $NEST_FOLDER_TREE/nest/utils/create
 
-if [[ $NEST_CUSHION_INDEX >= 0 ]]; then
+if (( $NEST_CUSHION_INDEX >= 0 )); then
   NEST_OPERATION=start $NEST_FOLDER_APP/app.nest
 fi
