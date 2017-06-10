@@ -125,7 +125,7 @@ dotnet_after_start() {
 	yell "-> dotnet_after_start"; 
 	do_things after start dotnet
 	
-	yell "dotnet run debug on port 5000" 
+	yell "dotnet run on port 5000" 
 	ASPNETCORE_URLS="http://*:5000" dotnet "$NEST_TAG.dll"
 }
 
