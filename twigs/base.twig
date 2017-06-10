@@ -26,7 +26,7 @@ twig_links_begin() {
 	NEST_TWIG_RUN_TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
 	NEST_LANGUAGE=''
 	NEST_LANGUAGE_VERSION=''
-	NEST_BASE_PACKAGES='["git", "sudo", "jq", "openssl", "ca-certificates"]'
+	NEST_BASE_PACKAGES='["git", "sudo", "openssl", "ca-certificates"]'
 
 	. /etc/profile.d/99-forest-profile
 }
@@ -186,6 +186,7 @@ install() {
 	do_things before install base
 	
 	try apt-get update -y
+	apt-get install -y jq
 	run_cmd "apt-get install -y" "$NEST_BASE_PACKAGES"
 
 	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
