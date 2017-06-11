@@ -1,3 +1,4 @@
+
 # ------------------------------------------------------
 #	Base Twig
 #	(c) 2016 Inkton
@@ -26,8 +27,13 @@ twig_links_begin() {
 	NEST_TWIG_RUN_TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
 	NEST_LANGUAGE=''
 	NEST_LANGUAGE_VERSION=''
-	NEST_BASE_PACKAGES='["git", "sudo", "openssl", "ca-certificates"]'
 
+	if [ "$NEST_CONTAINER_TYPE" == "test" ]; then
+		NEST_BASE_PACKAGES='["git", "sudo", "openssl", "ca-certificates", "build-essential", "unzip", "rsync", "python-pip", "python-dev", "inetutils-ping"]'
+	else
+		NEST_BASE_PACKAGES='["git", "sudo", "openssl", "ca-certificates"]'
+	fi
+	
 	. /etc/profile.d/99-forest-profile
 }
 
@@ -189,6 +195,13 @@ install() {
 	apt-get install -y jq
 	run_cmd "apt-get install -y" "$NEST_BASE_PACKAGES"
 
+	if [ "$NEST_CONTAINER_TYPE" == "test" ]; then
+		git clone https://github.com/inkton/nester.git /usr/local/nester
+		cd /usr/local/nester && make install
+		nester apps attach
+		nester contents pull
+	fi
+	
 	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
 	while read NEST_SERVICE_TAG ; do
 		if [ "$NEST_SERVICE_TAG" == "mariadb" ] ;then
