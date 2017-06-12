@@ -194,13 +194,6 @@ install() {
 	try apt-get update -y
 	apt-get install -y jq
 	run_cmd "apt-get install -y" "$NEST_BASE_PACKAGES"
-
-	if [ "$NEST_CONTAINER_TYPE" == "test" ]; then
-		git clone https://github.com/inkton/nester.git /usr/local/nester
-		cd /usr/local/nester && make install
-		nester apps attach
-		nester contents pull
-	fi
 	
 	jq -r '.service_subscriptions[].app_service_tier.app_service.tag' /var/app/app.json | 
 	while read NEST_SERVICE_TAG ; do
