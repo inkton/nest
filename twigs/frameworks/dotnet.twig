@@ -61,14 +61,10 @@ dotnet_after_install() {
 		yell "restore dotnet project ..."
                 dotnet restore
 		
-		if [ $NEST_CONTAINER_TYPE == "test" ];then
-			yell "dotnet build debug ..."
-			dotnet build --configuration Debug
-		else
-			yell "dotnet build release ..."				
-			dotnet build --configuration Release
-		fi
+		yell "dotnet build release ..."				
+		dotnet build --configuration Release
 		
+		yell "dotnet publish release ..."				
 		dotnet publish /p:PublishDir="$NEST_FOLDER_PUBLISH"
 	fi
 
