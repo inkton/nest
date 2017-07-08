@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -vx
+
 . $NEST_FOLDER_TREE/nest/utils/create
 
 if (( $NEST_CUSHION_INDEX >= 0 )); then
