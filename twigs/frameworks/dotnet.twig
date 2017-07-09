@@ -56,7 +56,7 @@ dotnet_after_install() {
 		yell "installing as master ..."
 	
 		. $NEST_FOLDER_TWIG_UTILS/shell
-		shell_set_nest_folder
+		shell_set_nest_source_folder
 		
 		yell "restore dotnet project ..."
                 dotnet restore
@@ -65,7 +65,7 @@ dotnet_after_install() {
 		dotnet build --configuration Release
 		
 		yell "dotnet publish release ..."				
-		dotnet publish /p:PublishDir="$NEST_FOLDER_PUBLISH"
+		dotnet publish /p:PublishDir="$NEST_FOLDER_PUBLISH/$NEST_TAG_CAP"
 	fi
 
 	do_things after install dotnet
@@ -114,7 +114,9 @@ dotnet_after_info() {
 dotnet_before_start() {
 	yell "-> dotnet_before_start"; 
 	do_things before start dotnet	
-	cd "$NEST_FOLDER_PUBLISH"
+
+	. $NEST_FOLDER_TWIG_UTILS/shell
+	shell_set_nest_publish_folder 
 }                                            
 
 dotnet_after_start() {

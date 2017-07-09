@@ -19,6 +19,10 @@ shell_setup_remote_user() {
 	try asuser $1 'ssh-keygen -t rsa '
 }
 
-shell_set_nest_folder() {
-	cd "$NEST_FOLDER_SOURCE"
+shell_set_nest_source_folder() {
+	cd "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" 
+}
+
+shell_set_nest_publish_folder() {
+	cd "$NEST_FOLDER_PUBLISH/$NEST_TAG_CAP" 
 }
