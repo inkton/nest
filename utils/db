@@ -4,16 +4,10 @@
 #  
 
 db_init() {
-	DB_NAME=app
-	DB_USER=$(jq -r '.service_subscriptions[].app_service_tier.app_service' \
-		$NEST_APP_REGISTRY_PATH | \
-		jq 'select(.tag == "$NEST_DB_VENDOR")' | jq '.user')
-	DB_PASSWORD=$(jq -r '.service_subscriptions[].app_service_tier.app_service' \
-		$NEST_APP_REGISTRY_PATH | \
-		jq 'select(.tag == "$NEST_DB_VENDOR")' | jq '.password')
-	DB_HOSTNAME=$(jq -r '.service_subscriptions[].app_service_tier.app_service' \
-		$NEST_APP_REGISTRY_PATH | \
-		jq 'select(.tag == "$NEST_DB_VENDOR")' | jq '.host')
+	DB_NAME=$(jq -r '.tag' $NEST_APP_REGISTRY_PATH)
+	DB_USER=$(jq -r '.tag' $NEST_APP_REGISTRY_PATH)
+	DB_PASSWORD=$(jq -r '.services_password' $NEST_APP_REGISTRY_PATH)
+	DB_HOSTNAME=$NEST_MYSQL_HOST
 }
 
 db_change_password() {
