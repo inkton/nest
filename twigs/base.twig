@@ -38,8 +38,6 @@ twig_links_begin() {
 }
 
 link_twigs() {
-	yell linking twigs "$1 and $2 ..." 
-
 	local to_init=twig_init_"$1"
 	local to_init_func="$2"_init
 
@@ -127,14 +125,14 @@ create_settings() {
 
 secure_access() {
 	yell "securing access to the public area"
-
-	try chown -R webadmin:tree "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP"
-	try chown -R webuser:tree "$NEST_FOLDER_PUBLISH/$NEST_TAG_CAP"
+	
+	try sudo chown -R webadmin:tree "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP"
+	try sudo chown -R webuser:tree "$NEST_FOLDER_PUBLISH/$NEST_TAG_CAP"
 	
 	# Change directory permissions rwxr-xr-x
-	try find "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" -type d -exec /bin/chmod 775 {} \;
+	try find "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" -type d -exec sudo chmod 775 {} \;
 	# Change file permissions rw-r--r--
-	try find "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" -type f -exec /bin/chmod 644 {} \; 	
+	try find "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" -type f -exec sudo chmod 644 {} \; 	
 }
 
 create_users() {
@@ -144,6 +142,8 @@ create_users() {
 	NEST_NETWORK_PASSWORD=$(jq -r ".network_password" /var/app/app.json)
 
 	shell_create_group 1008 tree
+	shell_create_group 1010 tree-admin
+	sudo echo "%tree-admin ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
 
 	shell_create_user 1012 webuser tree $NEST_NETWORK_PASSWORD
 	shell_create_user 1016 webadmin tree $NEST_NETWORK_PASSWORD
@@ -154,7 +154,7 @@ create_users() {
 			NEST_USER_ID=$(jq ".contacts[$key].id" /var/app/app.json)
 			NEST_USER_EMAIL=$(jq ".contacts[$key].email" /var/app/app.json)
 
-			shell_create_user $NEST_USER_ID $NEST_USER_ID tree
+			shell_create_user $NEST_USER_ID $NEST_USER_ID tree-admin
 			git_create_user $NEST_USER_ID $NEST_USER_EMAIL $NEST_USER_EMAIL
 		done
 	fi
