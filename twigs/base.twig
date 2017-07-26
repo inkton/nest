@@ -125,19 +125,29 @@ create_settings() {
 
 secure_access() {
 	yell "securing access to the public area"
-	
-	try sudo chown -R webadmin:tree "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP"
-	try sudo chown -R webuser:tree "$NEST_FOLDER_PUBLISH/$NEST_TAG_CAP"
-	
-	# Change directory permissions rwxr-xr-x
-	try find "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" -type d -exec sudo chmod 775 {} \;
-	# Change file permissions rw-r--r--
-	try find "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" -type f -exec sudo chmod 644 {} \; 	
+
+        try sudo chown -R webadmin:tree "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP"
+        try sudo chown -R webuser:tree "$NEST_FOLDER_PUBLISH/$NEST_TAG_CAP"
+        try sudo chown -R webadmin:tree "$NEST_FOLDER_SOURCE_SHARED"
+
+        # Change directory permissions rwxr-xr-x
+        try find "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" -type d -exec sudo chmod 775 {} \;
+        # Change file permissions rw-r--r--
+        try find "$NEST_FOLDER_SOURCE/$NEST_TAG_CAP" -type f -exec sudo chmod 775 {} \;
+
+        # Change directory permissions rwxr-xr-x
+        try find "$NEST_FOLDER_SOURCE_SHARED" -type d -exec sudo chmod 775 {} \;
+        # Change file permissions rw-r--r--
+        try find "$NEST_FOLDER_SOURCE_SHARED" -type f -exec sudo chmod 775 {} \;	
 }
 
 create_users() {
 	. $NEST_FOLDER_TWIG_UTILS/shell 
-	. $NEST_FOLDER_TWIG_UTILS/git
+:wq
+
+
+
+$NEST_FOLDER_TWIG_UTILS/git
 
 	NEST_NETWORK_PASSWORD=$(jq -r ".network_password" /var/app/app.json)
 
