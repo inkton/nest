@@ -143,11 +143,8 @@ secure_access() {
 
 create_users() {
 	. $NEST_FOLDER_TWIG_UTILS/shell 
-:wq
 
-
-
-$NEST_FOLDER_TWIG_UTILS/git
+	. $NEST_FOLDER_TWIG_UTILS/git
 
 	NEST_NETWORK_PASSWORD=$(jq -r ".network_password" /var/app/app.json)
 
